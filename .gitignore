@@ -1,0 +1,11 @@
+*.aux
+*.bbl
+*.blg
+*.fdb_latexmk
+*.log
+*.out
+*.fls
+doc/problem_description.pdf
+*.synctex.gz
+__pycache__
+peds.egg-info
