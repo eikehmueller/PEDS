@@ -13,6 +13,7 @@ def tridiagonal_apply(K_diff, u):
     :arg u: tensor that A(K) is applied to
     """
     n = K_diff.shape[-1]
+    h_inv = n
     v = torch.empty(K_diff.shape)
     v[..., 0] = (2 * K_diff[..., 0] + K_diff[..., 1]) * u[..., 0] - K_diff[..., 1] * u[
         ..., 1
@@ -24,7 +25,7 @@ def tridiagonal_apply(K_diff, u):
             - K_diff[..., j + 1] * u[..., j + 1]
         )
     v[..., n - 1] = K_diff[..., n - 1] * (u[..., n - 1] - u[..., n - 2])
-    return v
+    return h_inv * v
 
 
 def tridiagonal_solve(K_diff, f_rhs):
@@ -37,6 +38,7 @@ def tridiagonal_solve(K_diff, f_rhs):
     :arg f_rhs: tensor representing right hand side f(x)
     """
     n = K_diff.shape[-1]
+    h = 1.0 / n
     c = torch.empty(K_diff.shape)
     u = torch.empty(K_diff.shape)
     c[..., 0] = -K_diff[..., 1] / (2 * K_diff[..., 0] + K_diff[..., 1])
@@ -55,7 +57,7 @@ def tridiagonal_solve(K_diff, f_rhs):
     # backward sweep
     for j in range(n - 2, -1, -1):
         u[..., j] -= c[..., j] * u[..., j + 1]
-    return u
+    return h * u
 
 
 class DiffusionModel1dOperator(torch.autograd.Function):
@@ -104,17 +106,22 @@ class DiffusionModel1dOperator(torch.autograd.Function):
         :arg grad_output: dL/du
         """
         n = grad_output.shape[-1]
+        h_inv = n
         K_diff, u = ctx.saved_tensors
         # compute w such that A(alpha) w = grad_output
         w = tridiagonal_solve(K_diff, grad_output)
         grad_input = torch.empty(grad_output.shape)
-        grad_input[..., 0] = -2 * K_diff[..., 0] * u[..., 0] * w[..., 0]
+        grad_input[..., 0] = -2 * h_inv * K_diff[..., 0] * u[..., 0] * w[..., 0]
         for j in range(1, n):
-            grad_input[..., j] = -K_diff[..., j] * (
-                u[..., j - 1] * w[..., j - 1]
-                + u[..., j] * w[..., j]
-                - u[..., j - 1] * w[..., j]
-                - u[..., j] * w[..., j - 1]
+            grad_input[..., j] = (
+                -h_inv
+                * K_diff[..., j]
+                * (
+                    u[..., j - 1] * w[..., j - 1]
+                    + u[..., j] * w[..., j]
+                    - u[..., j - 1] * w[..., j]
+                    - u[..., j] * w[..., j - 1]
+                )
             )
         return None, grad_input
 
