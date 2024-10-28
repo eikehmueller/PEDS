@@ -74,7 +74,7 @@ Note that $\mathcal{Q}$ is linear in the first two cases but non-linear in the l
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 Let $\Omega = [0,1]$ be the unit interval. Split $\Omega$ into $n$ sub-intervals of size $h=1/n$ to obtain a grid \mbox{$\Omega_h := \bigcup_{j=0}^{n-1} I_j^{(h)}$} where $I_j^{(h)}=[jh,(j+1)h]=[x^{(h)}_j,x^{(h)}_{j+1}]$ for $j=0,1,\dots,n-1$ is the $j$-th sub-interval or cell of the grid. We call the points $x^{(h)}_j=jh$ for $j=0,1,\dots,n$ the vertices of the grid.
 
-Let $\alpha^{(h)}\in\mathbb{R}^{n}$ be the vector with $\alpha^{(h)}_j\approx \alpha(x^{(h)}_j)$ and $u^{(h)}\in\mathbb{R}^{n}$ be the vector with
+Let $\alpha^{(h)}\in\mathbb{R}^{n+1}$ be the vector with $\alpha^{(h)}_j\approx \alpha(x^{(h)}_j)$ for $j=0,1,\dots,n$ and $u^{(h)}\in\mathbb{R}^{n}$ be the vector with
 \begin{equation}
     u^{(h)}_j\approx \frac{1}{h}\int_{I^{(h)}_j} u(x)\; dx\qquad\text{for $j=0,1,\dots,n-1$},\label{eqn:vol_avg}
 \end{equation}
@@ -135,9 +135,9 @@ If the QoI is the field sampled at some locations $\xi_1,\xi_2,\dots,\xi_q$, the
 \subsection{Pure Numerical solution}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{enumerate}
-\item Given $\alpha^{(h)}$, compute $A^{(h)}=A^{(h)}(\alpha^{(h)})$.
-\item Solve the linear system in \eqref{eqn:discrete_system} to obtain $u^{(h)}=u^{(h)}(\alpha^{(h)})$.
-\item Compute the quantity of interest $q^{(h)} = q^{(h)}(\alpha^{(h)})= Q^{(h)}(u^{(h)}(\alpha^{(h)}))$
+\item Given $\alpha^{(h)}\in\mathbb{R}^{n+1}$, compute $A^{(h)}=A^{(h)}(\alpha^{(h)})$.
+\item Solve the linear system in \eqref{eqn:discrete_system} to obtain $u^{(h)}=u^{(h)}(\alpha^{(h)})\in\mathbb{R}^n$.
+\item Compute the quantity of interest $q^{(h)} = q^{(h)}(\alpha^{(h)})= Q^{(h)}(u^{(h)}(\alpha^{(h)}))\in\mathbb{R}^\beta$
 \end{enumerate}
 This method can be made very accurate by choosing $h\ll1$, but it also becomes very expensive in this case. The computational bottleneck is the solution of  \eqref{eqn:discrete_system}.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -151,7 +151,7 @@ This method can be made very accurate by choosing $h\ll1$, but it also becomes v
     \end{equation}
     \item Construct a neural network $\Phi_{\text{NN}}$ which is parametrised by some parameters $\theta$
     \begin{equation}
-        \Phi_{\text{NN}}(\cdot|\theta) : \mathbb{R}^{n} \rightarrow \mathbb{R}^{\beta}
+        \Phi_{\text{NN}}(\cdot|\theta) : \mathbb{R}^{n+1} \rightarrow \mathbb{R}^{\beta}
     \end{equation}
     \item Train the neural network by minimising some loss function $L(\{(\alpha^{(h)\ell},q^{(h)\ell})\}_{\ell=1}^{N_{\text{samples}}}|\theta)$.
 For example, one could minimise the average (squared) $L_2$ error:
@@ -177,7 +177,7 @@ The following approach is described in \cite{pestourie2023physics}:
     \item Construct a second grid $\Omega_H$ with grid spacing $H=1/N$ consisting of $N<n$ cells. We usually want to choose $H\gg h$.
     \item Define the downsampling operator
     \begin{xalignat}{2}
-        R:\mathbb{R}^{n}&\rightarrow \mathbb{R}^{N},&
+        R:\mathbb{R}^{n+1}&\rightarrow \mathbb{R}^{N+1},&
         \alpha^{(h)}&\mapsto \alpha^{(H)}_{\text{DS}}
     \end{xalignat}
     which takes a high-resolution $\alpha^{(h)}$ and turns it into a low-fidelity downsampled $\alpha^{(H)}_{\text{DS}}$. If $H=\mu h$ where the scale parameter $\mu=H/h=n/N\in\mathbb{N}$ is an integer, then we can for example simply set
@@ -189,7 +189,7 @@ The following approach is described in \cite{pestourie2023physics}:
         \Psi_{\text{NN}}(\cdot|\theta) : \mathbb{R}^{n}\rightarrow \mathbb{R}^{N}.
     \end{equation}
     $\Psi_{\text{NN}}$ maps $\alpha^{(h)}$ to some generated $\alpha_{\text{NN}}^{(H)}$ on the low-resolution grid.
-    \item Define some function $A:\mathbb{R}^{N}\times \mathbb{R}^{N}\times [0,1]\rightarrow \mathbb{R}^{N}$ for combining the downsampled $\alpha^{(H)}_{\text{DS}}$ and the generated $\alpha^{(H)}_{\text{NN}}$ into some $\alpha^{(H)}=A(\alpha^{(H)}_{\text{DS}},\alpha^{(H)}_{\text{NN}},w)$ where $w$ is a learnable parameter. For example, one might choose one of the following two weighted means
+    \item Define some function $A:\mathbb{R}^{N+1}\times \mathbb{R}^{N+1}\times [0,1]\rightarrow \mathbb{R}^{N+1}$ for combining the downsampled $\alpha^{(H)}_{\text{DS}}$ and the generated $\alpha^{(H)}_{\text{NN}}$ into some $\alpha^{(H)}=A(\alpha^{(H)}_{\text{DS}},\alpha^{(H)}_{\text{NN}},w)$ where $w$ is a learnable parameter. For example, one might choose one of the following two weighted means
     \begin{equation}
         \alpha^{(H)}_j = w (\alpha^{(H)}_{\text{NN}})_j + (1-w) (\alpha^{(H)}_{\text{DS}})_j \qquad\text{for $j=0,1,\dots,N$}
     \end{equation}
@@ -197,10 +197,10 @@ The following approach is described in \cite{pestourie2023physics}:
     \begin{equation}
         \alpha^{(H)}_j = \log\left(w \exp[(\alpha^{(H)}_{\text{NN}})_j] + (1-w) \exp[(\alpha^{(H)}_{\text{DS}})_j]\right) \qquad\text{for $j=0,1,\dots,N$}
     \end{equation}
-    \item For given neural network parameters $\theta$ and weight $w$ define the function $\mathcal{F}^{(h)}_{\text{PEDS}}(\cdot|\theta,w):\mathbb{R}^{n}\rightarrow \mathbb{R}^N$. This function maps a high-resolution $\alpha^{(h)}$ to the low fidelity solution $u^{(H)}=u^{(H)}(\alpha^{(h)})$ as follows:
+    \item For given neural network parameters $\theta$ and weight $w$ define the function $\mathcal{F}^{(h)}_{\text{PEDS}}(\cdot|\theta,w):\mathbb{R}^{n+1}\rightarrow \mathbb{R}^{N+1}$. This function maps a high-resolution $\alpha^{(h)}$ to the low fidelity solution $u^{(H)}=u^{(H)}(\alpha^{(h)})$ as follows:
     \begin{itemize}
         \item Compute $\alpha^{(H)}_{\text{DS}}$ and $\alpha^{(H)}_{\text{NN}}$ and combine them into $\alpha^{(H)}$ as described above.
-        \item Compute the low-fidelity solution $u^{(h)}$ by solving $A^{(H)}(\alpha^{(H)})u^{(H)}=\widetilde{f}^{(H)}$
+        \item Compute the low-fidelity solution $u^{(H)}\in\mathbb{R}^N$ by solving $A^{(H)}(\alpha^{(H)})u^{(H)}=\widetilde{f}^{(H)}$
     \end{itemize}
     \item Find optimal $\theta_{\text{opt}}$ and $w_{\text{opt}}$ by minimising some loss function $L(\{(\alpha^{(h)\ell},q^{(h)\ell})\}_{\ell=1}^{N_{\text{samples}}}|\theta)$. Again, the natural choice is to minimise the average (squared) $L_2$ error:
 \begin{equation}

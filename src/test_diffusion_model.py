@@ -19,7 +19,7 @@ def test_tridiagonal_solve_1d(rng):
     """Check that tridiagonal solve works for 1d tensors"""
     n = 32
     u_exact = torch.rand(n, generator=rng)
-    alpha = torch.rand(n, generator=rng)
+    alpha = torch.rand(n + 1, generator=rng)
     K_diff = torch.exp(alpha)
     f_rhs = tridiagonal_apply(K_diff, u_exact)
     u = tridiagonal_solve(K_diff, f_rhs)
@@ -34,7 +34,7 @@ def test_tridiagonal_solve_batched(rng):
     batchsize = 8
     m = 4
     u_exact = torch.rand((batchsize, m, n), generator=rng)
-    alpha = torch.rand((batchsize, m, n), generator=rng)
+    alpha = torch.rand((batchsize, m, n + 1), generator=rng)
     K_diff = torch.exp(alpha)
     f_rhs = tridiagonal_apply(K_diff, u_exact)
     u = tridiagonal_solve(K_diff, f_rhs)
@@ -49,7 +49,7 @@ def test_tridiagonal_solve_broadcast(rng):
     batchsize = 8
     m = 4
     f_rhs = torch.rand(n, generator=rng)
-    alpha = torch.rand((batchsize, m, n), generator=rng)
+    alpha = torch.rand((batchsize, m, n + 1), generator=rng)
     K_diff = torch.exp(alpha)
     u = tridiagonal_solve(K_diff, f_rhs)
     Au = tridiagonal_apply(K_diff, u)
@@ -63,8 +63,8 @@ def test_gradient(rng):
     n = 32
     batchsize = 8
     m = 4
-    alpha = torch.rand((batchsize, m, n), generator=rng, requires_grad=True)
-    dalpha = torch.rand((batchsize, m, n), generator=rng)
+    alpha = torch.rand((batchsize, m, n + 1), generator=rng, requires_grad=True)
+    dalpha = torch.rand((batchsize, m, n + 1), generator=rng)
     f_rhs = torch.rand(n, generator=rng)
     model = DiffusionModel1d(f_rhs)
     u = model(alpha)

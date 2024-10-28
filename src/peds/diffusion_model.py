@@ -12,9 +12,10 @@ def tridiagonal_apply(K_diff, u):
     :arg K_diff: tensor representing diffusion coefficient K(x)
     :arg u: tensor that A(K) is applied to
     """
-    n = K_diff.shape[-1]
+    u_shape = torch.Size([*K_diff.shape[:-1], K_diff.shape[-1] - 1])
+    n = u_shape[-1]
     h_inv2 = n**2
-    v = torch.empty(K_diff.shape)
+    v = torch.empty(u_shape)
     v[..., 0] = (2 * K_diff[..., 0] + K_diff[..., 1]) * u[..., 0] - K_diff[..., 1] * u[
         ..., 1
     ]
@@ -37,10 +38,11 @@ def tridiagonal_solve(K_diff, f_rhs):
     :arg K_diff: tensor representing diffusion coefficient K(x)
     :arg f_rhs: tensor representing right hand side f(x)
     """
-    n = K_diff.shape[-1]
+    u_shape = torch.Size([*K_diff.shape[:-1], K_diff.shape[-1] - 1])
+    n = u_shape[-1]
     h2 = 1.0 / n**2
-    c = torch.empty(K_diff.shape)
-    u = torch.empty(K_diff.shape)
+    c = torch.empty(u_shape)
+    u = torch.empty(u_shape)
     c[..., 0] = -K_diff[..., 1] / (2 * K_diff[..., 0] + K_diff[..., 1])
     u[..., 0] = f_rhs[..., 0] / (2 * K_diff[..., 0] + K_diff[..., 1])
     # forward sweep
@@ -105,12 +107,15 @@ class DiffusionModel1dOperator(torch.autograd.Function):
 
         :arg grad_output: dL/du
         """
+        grad_input_shape = torch.Size(
+            [*grad_output.shape[:-1], grad_output.shape[-1] + 1]
+        )
         n = grad_output.shape[-1]
         h_inv2 = n**2
         K_diff, u = ctx.saved_tensors
         # compute w such that A(alpha) w = grad_output
         w = tridiagonal_solve(K_diff, grad_output)
-        grad_input = torch.empty(grad_output.shape)
+        grad_input = torch.zeros(grad_input_shape)
         grad_input[..., 0] = -2 * h_inv2 * K_diff[..., 0] * u[..., 0] * w[..., 0]
         for j in range(1, n):
             grad_input[..., j] = (
