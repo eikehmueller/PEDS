@@ -61,10 +61,10 @@ class LogNormalDataset1d(torch.utils.data.IterableDataset):
         h = 1.0 / self.n
         h_inv_sq = 1 / h**2
 
-        Q_banded = np.empty((2, n))
+        Q_banded = np.empty((2, self.n + 1))
         Q_banded[1, :] = kappa**2 + 2 * h_inv_sq
         Q_banded[1, 0] = kappa**2 + h_inv_sq
-        Q_banded[1, n - 1] = kappa**2 + h_inv_sq
+        Q_banded[1, self.n] = kappa**2 + h_inv_sq
         Q_banded[0, :] = -h_inv_sq
         # banded Cholesky factor
         self.L_banded = sp.linalg.cholesky_banded(Q_banded, lower=False)
@@ -77,7 +77,7 @@ class LogNormalDataset1d(torch.utils.data.IterableDataset):
         """Iterator over dataset"""
         while True:
             xi = self.rng.normal(
-                loc=0, scale=np.sqrt(self.n / self.sigma2), size=self.n
+                loc=0, scale=np.sqrt(self.n / self.sigma2), size=self.n + 1
             )
             if self.a_power == 2:
                 yield sp.linalg.cho_solve_banded((self.L_banded, False), xi)
