@@ -1,34 +1,37 @@
 import torch
 
-from peds.diffusion_model import DiffusionModel1d, tridiagonal_apply
+import numpy as np
+from matplotlib import pyplot as plt
 
+from peds.diffusion_model import DiffusionModel1d
+from peds.lognormal_dataset import LogNormalDataset1d
 
 torch.set_default_dtype(torch.float64)
 
 rng = torch.Generator()
 rng.manual_seed(25157)
 
-batchsize = 4
-n = 8
-alpha = torch.rand((batchsize, 5, n), generator=rng, requires_grad=True)
-dalpha = torch.rand((batchsize, 5, n), generator=rng, requires_grad=True)
+batch_size = 8
+n = 128
+f_rhs = torch.ones(size=(n,))
+dataset = LogNormalDataset1d(n, Lambda=0.1, a_power=2)
+dataloader = torch.utils.data.DataLoader(dataset, batch_size=batch_size, shuffle=False)
+alpha = next(iter(dataloader))
 
-f_rhs = torch.rand(n, generator=rng)
-K = torch.exp(alpha)
 model = DiffusionModel1d(f_rhs)
 u = model(alpha)
-f = tridiagonal_apply(K, u)
-error = torch.norm(f - f_rhs)
-print(f"error = {error.detach().numpy():8.3e}")
-loss = torch.sum(u**2)
-loss.backward()
-grad = torch.sum(alpha.grad * dalpha)
 
-epsilon = 1.0e-8
+X_alpha = np.arange(0, 1 + 0.5 / n, 1 / n)
+X_u = np.arange(0, 1, 1 / n) + 0.5 / n
 
-uprime = model(alpha + epsilon * dalpha)
-lossprime = torch.sum(uprime**2)
-grad_numerical = (lossprime - loss) / epsilon
+fig, axs = plt.subplots(nrows=1, ncols=2)
+for j in range(batch_size):
+    axs[0].plot(X_alpha, np.exp(alpha[j, :]))
+    axs[1].plot(X_u, u[j, :])
+for ax in axs:
+    ax.set_xlim(0, 1)
+    ax.set_xlabel("$x$")
+axs[0].set_ylabel("diffusion coefficient $K(x)$")
+axs[1].set_ylabel("solution $u(x)$")
 
-print(grad)
-print(grad_numerical)
+plt.savefig("solution_sample.pdf", bbox_inches="tight")
