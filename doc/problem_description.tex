@@ -1,5 +1,6 @@
 \documentclass[11pt]{article}
 \usepackage{amssymb,amsmath}
+\usepackage{graphicx}
 \usepackage{hyperref}
 \hypersetup{
     colorlinks=true,
@@ -248,6 +249,61 @@ with
 A(\alpha) w &=\frac{\partial L}{\partial u}, &
 A(\alpha) u &=f-\delta
 \end{xalignat}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Distribution of diffusion coefficient}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+We assume that the logarithm $\alpha(x)$ of the diffusion coefficient is a Gaussian Random Field (GRF) which satisfies
+\begin{equation}
+    (-\Delta + \kappa^2)^{a/2}\alpha(x) = \mathcal{W}(x)
+\end{equation}
+where $\mathcal{W}$ is white noise with $\mathbb{E}[\mathcal{W}(x)]=0$, $\mathbb{E}[\mathcal{W}(x)\mathcal{W}(y)] = \delta(x-y)$. $\kappa^{-1}=:\Lambda$ is the correlation length. We have trivially that $\mathbb{E}[\alpha(x)]=0$. If the field was defined on the entire real line then its covariance would be given by the Matern function
+\begin{equation}
+    \operatorname{Cov}[\alpha(x)\alpha(y)]=\mathbb{E}[\alpha(x)\alpha(y)] = C_{\nu,\kappa}(\kappa |x-y|):=\frac{\sigma^2}{2^{\nu-1}\Gamma(\nu)}\left(\kappa |x-y|\right)^\nu K_\nu(\kappa|x-y|) 
+\end{equation}
+where $a = \nu+\frac{1}{2}$ and $K_\nu$ is the modified Bessel function of the second kind \cite{lindgren2011explicit}.
+The marginal covariance is given by
+\begin{equation}
+    \sigma^2 = \sigma^2(\nu,\kappa) = \frac{\Gamma(\nu)}{\Gamma(\nu+\frac{1}{2})\sqrt{4\pi}\kappa^{2\nu}}
+\end{equation}
+Here we only consider the two cases $a=1$, $\nu=\frac{1}{2}$ and $a=2$, $\nu=\frac{3}{2}$ for which the Matern function $C_{\nu,\kappa}$ reduces to 
+\begin{equation}
+\begin{aligned}
+        C_{\nu=\frac{1}{2},\kappa}(\kappa|x-y|) &= \frac{1}{2\kappa}\exp[-\kappa|x-y|],\\
+        C_{\nu=\frac{3}{2},\kappa}(\kappa|x-y|) &= \frac{1}{4\kappa^3}\left(1+\kappa|x-y|\right)\exp[-\kappa|x-y|].
+\end{aligned}
+\end{equation}
+For the finite domain $\Omega=[0,1]$ we need to impose boundary conditions which we choose to be $\frac{d\alpha}{dx}(0)=\frac{d\alpha}{dx}(1)=0$. To generate samples of $\alpha(x)$ in practice, we divide the domain into $N$ cells as above and sample the vector $\alpha^{(h)}=(\alpha(x_0),\alpha(x_1),\dots,\alpha(x_N))\in\mathbb{R}^{N+1}$ at the vertices $x_j$. A finite difference discretisation of the shifted Laplace operator $-\Delta + \kappa^2$ is given by the tridiagonal matrix
+\begin{equation}
+    Q^{(h)} = \frac{1}{h^2}\begin{pmatrix}
+        2 +\kappa^2h^2 & -1 & 0 & 0 & 0&\cdots & 0\\
+            -1 & 2+\kappa^2h^2 & - 1  & 0 &0& \cdots & 0\\
+            0 & -1 & 2+\kappa^2h^2 & - 1 & 0 & \cdots & 0\\
+            0 & 0 & -1& \ddots\\
+            0&0&0&&&&\vdots\\
+            \vdots & \vdots &\vdots&&\ddots &-1 & 0\\
+             &  &  & & -1 &  2+\kappa^2h^2 & -1\\
+            0 & 0 & 0 & \cdots &0 &  -1  & 2+\kappa^2h^2
+    \end{pmatrix}.
+\end{equation}
+Let $\xi^{(h)}=(\xi_0,\xi_1,\dots,\xi_N)\in\mathbb{R}^{N+1}$ be a vector of independent and identically distributed (i.i.d.) Gaussian random variables $\xi_j\sim\mathcal{N}(0,h^{-1})$ for $j=0,1,\dots,N$; we also write $\xi^{(h)}\sim \pi_0^{(h)}$. For $a=1$, $\nu=\frac{3}{2}$ we can generate a sample $\alpha^{(h)k}$ from the target distribution $\pi^{(h)}(\cdot|\nu,\kappa)$ by drawing $\xi^{(h)k}\sim \pi_0^{(h)}$ and solving the tridiagonal system $Q^{(h)}\alpha^{(h)k}=\xi^{(h)k}$ for $\alpha^{(h)k}$. For $a=1$, $\nu=\frac{1}{2}$ we Cholesky factorise $Q^{(h)}=L^{(h)}(L^{(h)})^\top$ and solve the bi-diagonal system $(L^{(h)})^\top\alpha^{(h)k}= \xi^{(h)k}$. Observe that the approach is readily extended to integer $a>1$.
+\begin{figure}
+    \begin{center}
+        \includegraphics[width=0.45\linewidth]{figures/samples_nu0_5.pdf}
+        \hfill
+        \includegraphics[width=0.45\linewidth]{figures/samples_nu1_5.pdf}
+    \end{center}
+    \caption{Random samples $\alpha(x)$ drawn from $\pi^{(h)}(\cdot|\nu,\kappa)$ for $a=1$, $\nu=\frac{1}{2}$ (left) and $a=2$, $\nu=\frac{3}{2}$ (right). In both cases the correlation length is $\kappa^{-1}=0.1$ and the number of gridcells is $N=256$. The samples are scaled by $\sigma^{-1}$ to make their variance $\sim 1$.}
+    \label{fig:random_samples}
+\end{figure}
+\begin{figure}
+    \begin{center}
+        \includegraphics[width=0.45\linewidth]{figures/covariance_nu0_5.pdf}
+        \hfill
+        \includegraphics[width=0.45\linewidth]{figures/covariance_nu1_5.pdf}
+    \end{center}
+    \caption{Empirical covariance between the points $x$ and $y=\frac{3}{4}$ and Matern covariance function. Results are shown for $a=1$, $\nu=\frac{1}{2}$ (left) and $a=2$, $\nu=\frac{3}{2}$ (right). In both cases the correlation length is $\kappa^{-1}=0.1$ and the number of gridcells is $N=256$. The samples are scaled by $\sigma^{-1}$ to make their variance $\sim 1$.}
+    \label{fig:random_samples}
+\end{figure}
 \bibliographystyle{unsrt}
 \bibliography{problem_description}
 \end{document}
