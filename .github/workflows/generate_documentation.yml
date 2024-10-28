@@ -17,7 +17,7 @@ jobs:
       - name: Copy 
         run: |
             mkdir out
-            cp ./doc/problem_deacription.pdf ./out/problem_description.pdf      
+            cp ./doc/problem_description.pdf ./out/problem_description.pdf      
       - name: Deploy PDF file
         uses: JamesIves/github-pages-deploy-action@3.6.2
         with:
