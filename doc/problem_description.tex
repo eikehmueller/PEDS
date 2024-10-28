@@ -83,22 +83,22 @@ with an analogous definition of the vector $f^{(h)}\in \mathbb{R}^n$. The defini
     \begin{aligned}
        hf^{(h)}_j :=\int_{I^{(h)}_j} f(x)\;dx&=
     -\int_{I^{(h)}_j} \frac{d}{dx}\left(\exp[\alpha(x)]\frac{du}{dx}(x)\right)\;dx \\
-    &=h\left(\exp[\alpha(x^{(h)}_{j})]\frac{du}{dx}(x^{(h)}_{j})-\exp[\alpha(x^{(h)}_{j+1})]\frac{du}{dx}(x^{(h)}_{j+1})\right)\\
+    &=\exp[\alpha(x^{(h)}_{j})]\frac{du}{dx}(x^{(h)}_{j})-\exp[\alpha(x^{(h)}_{j+1})]\frac{du}{dx}(x^{(h)}_{j+1})\\
     &\approx \begin{cases}
-        h\left(\exp[\alpha^{(h)}_{j}]\frac{2u^{(h)}_j}{h}-\exp[\alpha^{(h)}_{j+1}]\frac{u^{(h)}_{j+1}-u^{(h)}_j}{h}\right)&\text{for $j=0$}\\
-        h\left(\exp[\alpha^{(h)}_{j}]\frac{u^{(h)}_j-u^{(h)}_{j-1}}{h}-\exp[\alpha^{(h)}_{j+1}]\frac{u^{(h)}_{j+1}-u^{(h)}_j}{h}\right)&\text{for $0<j<n-1$}\\ 
-        h\left(\exp[\alpha^{(h)}_{j}]\frac{u^{(h)}_j-u^{(h)}_{j-1}}{h}+g\right)&\text{for $j=n-1$}
+        \exp[\alpha^{(h)}_{j}]\frac{2u^{(h)}_j}{h}-\exp[\alpha^{(h)}_{j+1}]\frac{u^{(h)}_{j+1}-u^{(h)}_j}{h}&\text{for $j=0$}\\
+        \exp[\alpha^{(h)}_{j}]\frac{u^{(h)}_j-u^{(h)}_{j-1}}{h}-\exp[\alpha^{(h)}_{j+1}]\frac{u^{(h)}_{j+1}-u^{(h)}_j}{h}&\text{for $0<j<n-1$}\\ 
+        \exp[\alpha^{(h)}_{j}]\frac{u^{(h)}_j-u^{(h)}_{j-1}}{h}+g&\text{for $j=n-1$}
     \end{cases}
     \end{aligned}  
 \end{equation}
 This results in the following linear system:
 \begin{equation}
-A^{(h)} u^{(h)} = f^{(h)}-\delta^{(h)}\label{eqn:discrete_system}
+A^{(h)} u^{(h)} = \widetilde{f}^{(h)} := f^{(h)}-\frac{g}{h} \widehat{e}^{(h)}\label{eqn:discrete_system}
 \end{equation}
-where $\delta^{(h)}=(0,0,\dots,0,g)\in\mathbb{R}^{n}$ is the vector which is zero everywhere except for its final entry. The matrix $A^{(h)} = A^{(h)}(\alpha^{(h)})$ is given by
+where $\widehat{e}^{(h)}=(0,0,\dots,0,1)\in\mathbb{R}^{n}$ is the vector which is zero everywhere except for its final entry. The matrix $A^{(h)} = A^{(h)}(\alpha^{(h)})$ is given by
 \begin{equation}
     A^{(h)}(\alpha^{(h)}) =
-    \begin{aligned}\frac{1}{h}
+    \begin{aligned}\frac{1}{h^2}
         \begin{pmatrix}
             2K_0 + K_1 & -K_1 & 0 & 0 & 0&\cdots & 0\\
             -K_1 & K_1 + K_2 & - K_2  & 0 &0& \cdots & 0\\
@@ -146,7 +146,7 @@ This method can be made very accurate by choosing $h\ll1$, but it also becomes v
 \begin{enumerate}
     \item Generate a training data set $\{(\alpha^{(h)\ell},q^{(h)\ell})\}_{\ell=1}^{N_{\text{samples}}}$ where for each pair $(\alpha^{(h)\ell},q^{(h)\ell})$ we have that $q^{(h)\ell}=Q^{(h)}(u^{(h)\ell})$ and $u^{(h)\ell}$ satisfies \eqref{eqn:discrete_system}, i.e. 
     \begin{equation}
-        A^{(h)}(\alpha^{(h)\ell})u^{(h)\ell}=f^{(h)}-\delta^{(h)}
+        A^{(h)}(\alpha^{(h)\ell})u^{(h)\ell}=\widetilde{f}^{(h)}
         \qquad\text{for $\ell=1,2,\dots,N_{\text{samples}}$.}
     \end{equation}
     \item Construct a neural network $\Phi_{\text{NN}}$ which is parametrised by some parameters $\theta$
@@ -166,7 +166,7 @@ If trained properly, $\Phi_{\text{NN}}$ with optimal parameters $\theta_{\text{o
 \begin{equation}
     \Phi_{\text{NN}}(\alpha^{(h)}|\theta_{\text{opt}}) \approx q^{(h)}
 \end{equation}
-where $q^{(h)}=Q^{(h)}(u^{(h)})$ and $u^{(h)}$ is the solution of $A^{(h)}(\alpha^{(h)}) u^{(h)}=f^{(h)}-\delta^{(h)}$.
+where $q^{(h)}=Q^{(h)}(u^{(h)})$ and $u^{(h)}$ is the solution of $A^{(h)}(\alpha^{(h)}) u^{(h)}=\widetilde{f}^{(h)}$.
 The problem with this approach is that the neural network is a black box.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsection{Hybrid approach: Physics Enhanced Deep Surrogates (PEDS)}
@@ -200,7 +200,7 @@ The following approach is described in \cite{pestourie2023physics}:
     \item For given neural network parameters $\theta$ and weight $w$ define the function $\mathcal{F}^{(h)}_{\text{PEDS}}(\cdot|\theta,w):\mathbb{R}^{n}\rightarrow \mathbb{R}^N$. This function maps a high-resolution $\alpha^{(h)}$ to the low fidelity solution $u^{(H)}=u^{(H)}(\alpha^{(h)})$ as follows:
     \begin{itemize}
         \item Compute $\alpha^{(H)}_{\text{DS}}$ and $\alpha^{(H)}_{\text{NN}}$ and combine them into $\alpha^{(H)}$ as described above.
-        \item Compute the low-fidelity solution $u^{(h)}$ by solving $A^{(H)}(\alpha^{(H)})u^{(H)}=f^{(H)}-\delta^{(H)}$
+        \item Compute the low-fidelity solution $u^{(h)}$ by solving $A^{(H)}(\alpha^{(H)})u^{(H)}=\widetilde{f}^{(H)}$
     \end{itemize}
     \item Find optimal $\theta_{\text{opt}}$ and $w_{\text{opt}}$ by minimising some loss function $L(\{(\alpha^{(h)\ell},q^{(h)\ell})\}_{\ell=1}^{N_{\text{samples}}}|\theta)$. Again, the natural choice is to minimise the average (squared) $L_2$ error:
 \begin{equation}
@@ -214,7 +214,7 @@ If trained properly, $\mathcal{F}_{\text{PEDS}}$ with optimal parameters $\theta
 \begin{equation}
     Q^{(H)}\left(\mathcal{F}^{(h)}_{\text{PEDS}}(\alpha^{(h)}|\theta_{\text{opt}},w_{\text{opt}})\right) \approx q^{(h)}
 \end{equation}
-where $q^{(h)}=Q^{(h)}(u^{(h)})$ and $u^{(h)}$ is the solution of $A^{(h)}(\alpha^{(h)}) u^{(h)}=f^{(h)}-\delta^{(h)}$.
+where $q^{(h)}=Q^{(h)}(u^{(h)})$ and $u^{(h)}$ is the solution of $A^{(h)}(\alpha^{(h)}) u^{(h)}=\widetilde{f}^{(h)}$.
 \appendix
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Gradients}
@@ -222,8 +222,8 @@ where $q^{(h)}=Q^{(h)}(u^{(h)})$ and $u^{(h)}$ is the solution of $A^{(h)}(\alph
 We need to back-propagate through the solution, i.e. the map $\alpha\mapsto u$ defined by 
 \begin{equation}
     \begin{aligned}
-    A(\alpha)u &= f - \delta\\
-    u &= A(\alpha)^{-1}(f-\delta)
+    A(\alpha)u &= \widetilde{f}\\
+    \Leftrightarrow\qquad u &= A(\alpha)^{-1}\widetilde{f}
     \end{aligned}
 \end{equation}
 where for simplicity we have dropped all superscripts relating to the grid spacing $H$. The chain rule gives:
@@ -233,12 +233,12 @@ where for simplicity we have dropped all superscripts relating to the grid spaci
 which leads to
 \begin{equation}
     \begin{aligned}
-    \frac{\partial u_j}{\partial\alpha_i} &= \sum_k\left(\frac{\partial}{\partial \alpha_i}A(\alpha)^{-1}\right)_{jk}(f_k-\delta_k)  \\
-    &=-\left(A(\alpha)^{-1} D_i(\alpha)A(\alpha)^{-1}(f-\delta)\right)_j\qquad\text{with $
+    \frac{\partial u_j}{\partial\alpha_i} &= \sum_k\left(\frac{\partial}{\partial \alpha_i}A(\alpha)^{-1}\right)_{jk}\widetilde{f}_k\\
+    &=-\left(A(\alpha)^{-1} D_i(\alpha)A(\alpha)^{-1}\widetilde{f}\right)_j\qquad\text{with $
     D_i(\alpha):=\frac{\partial \delta}{\partial \alpha_i}(\alpha)$}.
     \end{aligned}
 \end{equation}
-The matrix $D_i(\alpha)$ contains mostly zero entries. For $i=0$ it has exactly one non-zero entry, namely $(D_0(\alpha))_{0,0} = 2h^{-1}\exp[\alpha_0]$. For $1<i<N$ it has exactly four non-zero entries namely $(D_i(\alpha))_{i,i}=(D_i(\alpha))_{i-1,i-1}=-(D_i(\alpha))_{i,i-1}=-(D_i(\alpha))_{i-1,i}=h^{-1}\exp[\alpha_i]$.
+The matrix $D_i(\alpha)$ contains mostly zero entries. For $i=0$ it has exactly one non-zero entry, namely $(D_0(\alpha))_{0,0} = 2h^{-2}\exp[\alpha_0]$. For $1<i<N$ it has exactly four non-zero entries namely $(D_i(\alpha))_{i,i}=(D_i(\alpha))_{i-1,i-1}=-(D_i(\alpha))_{i,i-1}=-(D_i(\alpha))_{i-1,i}=h^{-2}\exp[\alpha_i]$.
 
 Further, we can write:
 \begin{equation}
@@ -247,7 +247,7 @@ Further, we can write:
 with 
 \begin{xalignat}{2}
 A(\alpha) w &=\frac{\partial L}{\partial u}, &
-A(\alpha) u &=f-\delta
+A(\alpha) u &=\widetilde{f}
 \end{xalignat}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Distribution of diffusion coefficient}
