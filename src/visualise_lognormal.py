@@ -1,7 +1,7 @@
 import itertools
 import numpy as np
 from matplotlib import pyplot as plt
-from peds.lognormal_distribution import matern, LogNormalDistribution1d
+from peds.distributions import matern, LogNormalDistribution1d
 
 n = 256
 Lambda = 0.1  # correlation length

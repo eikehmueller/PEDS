@@ -4,7 +4,7 @@ import numpy as np
 from matplotlib import pyplot as plt
 
 from peds.diffusion_model import DiffusionModel1d
-from peds.lognormal_dataset import LogNormalDataset1d
+from peds.distributions import LogNormalDistribution1d
 
 torch.set_default_dtype(torch.float64)
 
@@ -14,20 +14,18 @@ rng.manual_seed(25157)
 batch_size = 8
 n = 128
 f_rhs = torch.ones(size=(n,))
-dataset = LogNormalDataset1d(n, Lambda=0.1, a_power=2)
-dataloader = torch.utils.data.DataLoader(dataset, batch_size=batch_size, shuffle=False)
-alpha = next(iter(dataloader))
-
-model = DiffusionModel1d(f_rhs)
-u = model(alpha)
+distribution = LogNormalDistribution1d(n, Lambda=0.1, a_power=2)
 
 X_alpha = np.arange(0, 1 + 0.5 / n, 1 / n)
 X_u = np.arange(0, 1, 1 / n) + 0.5 / n
 
 fig, axs = plt.subplots(nrows=1, ncols=2)
 for j in range(batch_size):
-    axs[0].plot(X_alpha, np.exp(alpha[j, :]))
-    axs[1].plot(X_u, u[j, :])
+    alpha = next(iter(distribution))
+    model = DiffusionModel1d(f_rhs)
+    u = model(torch.Tensor(alpha))
+    axs[0].plot(X_alpha, np.exp(alpha))
+    axs[1].plot(X_u, u)
 for ax in axs:
     ax.set_xlim(0, 1)
     ax.set_xlabel("$x$")

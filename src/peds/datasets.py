@@ -1,7 +1,9 @@
 import torch
 
+__all__ = ["PEDSDataset"]
 
-class Dataset(torch.utils.data.IterableDataset):
+
+class PEDSDataset(torch.utils.data.IterableDataset):
     """Dataset consisting of (geometry, QoI) pairs"""
 
     def __init__(self, distribution, physics_model, qoi):
