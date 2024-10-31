@@ -138,7 +138,27 @@ class DiffusionModel1d(torch.nn.Module):
 
         :arg f_rhs: 1d tensor representing the right hand side"""
         super().__init__()
-        self.metadata = dict(f_rhs=f_rhs)
+        self.metadata = dict(f_rhs=torch.Tensor(f_rhs))
+
+    def coarsen(self, scaling_factor):
+        """Return a coarsened version of the model
+
+        :arg scaling_factor: coarsening factor, must be an integer divisor of problem size
+        """
+        f_rhs = self.metadata["f_rhs"]
+        n = f_rhs.shape[-1]
+        assert (
+            n == (n // scaling_factor) * scaling_factor
+        ), "scaling factor must divide problem size"
+        # Construct coarse RHS by averaging over final dimension
+        f_rhs_coarse = torch.mean(
+            torch.reshape(
+                f_rhs,
+                (*f_rhs.shape[:-1], f_rhs.shape[-1] // scaling_factor, scaling_factor),
+            ),
+            -1,
+        )
+        return DiffusionModel1d(f_rhs_coarse)
 
     def forward(self, x):
         """Apply model
