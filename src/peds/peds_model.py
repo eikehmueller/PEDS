@@ -28,6 +28,18 @@ class PEDSModel(torch.nn.Module):
         self.w = torch.nn.Parameter(torch.Tensor([0.5]))
         self.w.requires_grad = True
 
+    def to(self, device):
+        """Move to device
+
+        :arg device: device to move to
+        """
+        new_self = super().to(device)
+        new_self._physics_model = self._physics_model.to(device)
+        new_self._downsampler = self._downsampler.to(device)
+        new_self._nn_model = self._nn_model.to(device)
+        new_self.w = self.w.to(device)
+        return new_self
+
     def forward(self, x):
         """Evaluate model"""
         alpha_ds = self._downsampler(x)

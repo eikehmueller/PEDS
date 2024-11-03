@@ -8,6 +8,9 @@ from peds.quantity_of_interest import QoISampling1d
 from peds.datasets import PEDSDataset
 from peds.peds_model import PEDSModel
 
+device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+print(f"Running on device {device}")
+
 n = 256  # number of grid cells
 Lambda = 0.1  # correlation length
 a_power = 2  # power in log-normal distribution
@@ -66,6 +69,7 @@ nn_model = torch.nn.Sequential(
 )
 
 peds_model = PEDSModel(physics_model_lowres, nn_model, downsampler, qoi)
+peds_model = peds_model.to(device)
 coarse_model = torch.nn.Sequential(downsampler, physics_model_lowres, qoi)
 print(f"number of model parameters = {peds_model.n_param}")
 
@@ -78,6 +82,8 @@ for epoch in range(n_epoch):
     train_loss_avg = 0
     for i, data in enumerate(train_dataloader):
         alpha, q_target = data
+        alpha = alpha.to(device)
+        q_target = q_target.to(device)
         optimizer.zero_grad()
         q_pred = peds_model(alpha)
         loss = loss_fn(q_pred, q_target)
@@ -86,6 +92,8 @@ for epoch in range(n_epoch):
         train_loss = loss.item()
         train_loss_avg += train_loss / (n_samples_train / batch_size)
     alpha, q_target = next(iter(valid_dataloader))
+    alpha = alpha.to(device)
+    q_target = q_target.to(device)
     q_pred = peds_model(alpha)
     valid_loss = loss_fn(q_pred, q_target)
     q_pred_coarse = coarse_model(alpha)
@@ -97,7 +105,7 @@ for epoch in range(n_epoch):
     )
     writer.add_scalar("NN weight", peds_model.w.detach(), epoch)
     writer.add_scalar("gain", coarse_loss / valid_loss, epoch)
-    writer.add_scalar("learning rate", scheduler.get_lr()[0], epoch)
+    writer.add_scalar("learning rate", scheduler.get_last_lr()[0], epoch)
     print(
         f"epoch {epoch+1:5d}:  {train_loss_avg:12.6f} {valid_loss:12.6f} {coarse_loss:12.6f}"
     )
