@@ -35,3 +35,8 @@ class PEDSModel(torch.nn.Module):
         alpha = self.w * alpha_nn + (1 - self.w) * alpha_ds
         u = self._physics_model(alpha)
         return self._qoi(u)
+
+    @property
+    def n_param(self):
+        """Return total number of parameters"""
+        return sum([torch.numel(p) for p in self.parameters()])
