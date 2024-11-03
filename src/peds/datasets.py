@@ -21,7 +21,9 @@ class PEDSDataset(torch.utils.data.IterableDataset):
     def __iter__(self):
         """Return a new sample"""
         while True:
-            alpha = torch.tensor(next(iter(self._distribution)))
+            alpha = torch.tensor(
+                next(iter(self._distribution)), dtype=torch.torch.get_default_dtype()
+            )
             u = self._physics_model(alpha)
             q = self._qoi(u)
             yield (alpha, q)
