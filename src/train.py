@@ -11,6 +11,7 @@ from peds.peds_model import PEDSModel
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 print(f"Running on device {device}")
 
+use_peds = True  # use PEDS model
 n = 256  # number of grid cells
 Lambda = 0.1  # correlation length
 a_power = 2  # power in log-normal distribution
@@ -68,13 +69,26 @@ nn_model = torch.nn.Sequential(
     torch.nn.Flatten(-2, -1),
 )
 
-peds_model = PEDSModel(physics_model_lowres, nn_model, downsampler, qoi)
-peds_model = peds_model.to(device)
+if use_peds:
+    model = PEDSModel(physics_model_lowres, nn_model, downsampler, qoi)
+else:
+    dense_layers = torch.nn.Sequential(
+        torch.nn.Linear(n_lowres + 1, n_lowres),
+        torch.nn.ReLU(),
+        torch.nn.Linear(n_lowres, n_lowres),
+        torch.nn.ReLU(),
+        torch.nn.Linear(n_lowres, len(sample_points)),
+    )
+    model = nn_model + dense_layers
+n_param = sum([torch.numel(p) for p in model.parameters()])
+print(f"number of model parameters = {n_param}")
+
+model = model.to(device)
 coarse_model = torch.nn.Sequential(downsampler, physics_model_lowres, qoi)
-print(f"number of model parameters = {peds_model.n_param}")
+
 
 loss_fn = torch.nn.MSELoss()
-optimizer = torch.optim.Adam(peds_model.parameters(), lr=1e-3)
+optimizer = torch.optim.Adam(model.parameters(), lr=1e-3)
 scheduler = torch.optim.lr_scheduler.ExponentialLR(optimizer, gamma=0.99)
 
 writer = SummaryWriter(flush_secs=5)
@@ -85,7 +99,7 @@ for epoch in range(n_epoch):
         alpha = alpha.to(device)
         q_target = q_target.to(device)
         optimizer.zero_grad()
-        q_pred = peds_model(alpha)
+        q_pred = model(alpha)
         loss = loss_fn(q_pred, q_target)
         loss.backward()
         optimizer.step()
@@ -94,7 +108,7 @@ for epoch in range(n_epoch):
     alpha, q_target = next(iter(valid_dataloader))
     alpha = alpha.to(device)
     q_target = q_target.to(device)
-    q_pred = peds_model(alpha)
+    q_pred = model(alpha)
     valid_loss = loss_fn(q_pred, q_target)
     q_pred_coarse = coarse_model(alpha)
     coarse_loss = loss_fn(q_pred_coarse, q_target)
@@ -103,7 +117,8 @@ for epoch in range(n_epoch):
         {"train": train_loss_avg, "valid": valid_loss, "coarse": coarse_loss},
         epoch,
     )
-    writer.add_scalar("NN weight", peds_model.w.detach(), epoch)
+    if isinstance(model, PEDSModel):
+        writer.add_scalar("NN weight", model.w.detach(), epoch)
     writer.add_scalar("gain", coarse_loss / valid_loss, epoch)
     writer.add_scalar("learning rate", scheduler.get_last_lr()[0], epoch)
     print(
