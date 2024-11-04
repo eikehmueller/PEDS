@@ -11,7 +11,7 @@ from peds.peds_model import PEDSModel
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 print(f"Running on device {device}")
 
-use_peds = True  # use PEDS model
+use_peds = True  # use PEDS model?
 n = 256  # number of grid cells
 Lambda = 0.1  # correlation length
 a_power = 2  # power in log-normal distribution
