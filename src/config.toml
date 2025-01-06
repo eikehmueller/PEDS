@@ -1,5 +1,6 @@
 [model]
-use_peds = "True" # use PEDS model?
+use_peds = "True"      # use PEDS model?
+filename = "model.pth"
 
 [discretisation]
 n = 256            # number of grid cells
@@ -13,7 +14,8 @@ Lambda = 0.1           # correlation length
 a_power = 2            # power in log-normal distribution
 n_samples_train = 2048 # number of training samples
 n_samples_valid = 32   # number of validation samples
+n_samples_test = 32    # number of test samples
 
 [train]
 batch_size = 32 # batch size
-n_epoch = 1000  # number of epochs
+n_epoch = 256   # number of epochs
