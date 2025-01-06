@@ -1,0 +1,19 @@
+[model]
+use_peds = "True" # use PEDS model?
+
+[discretisation]
+n = 256            # number of grid cells
+scaling_factor = 8 # ratio between fine and coarse grid cells
+
+[qoi]
+sample_points = [0.1, 0.3, 0.5, 0.7, 0.9] # sample points
+
+[data]
+Lambda = 0.1           # correlation length
+a_power = 2            # power in log-normal distribution
+n_samples_train = 2048 # number of training samples
+n_samples_valid = 32   # number of validation samples
+
+[train]
+batch_size = 32 # batch size
+n_epoch = 1000  # number of epochs

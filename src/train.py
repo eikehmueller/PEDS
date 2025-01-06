@@ -1,4 +1,5 @@
 import itertools
+import tomllib
 import torch
 from torch.utils.tensorboard import SummaryWriter
 
@@ -11,18 +12,29 @@ from peds.peds_model import PEDSModel
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 print(f"Running on device {device}")
 
-use_peds = True  # use PEDS model?
-n = 256  # number of grid cells
-Lambda = 0.1  # correlation length
-a_power = 2  # power in log-normal distribution
-n_samples_train = 2048  # number of training samples
-n_samples_valid = 32  # number of validation samples
-batch_size = 32  # batch size
-n_epoch = 1000
-scaling_factor = 8  # ratio between fine and coarse grid cells
-n_lowres = n // scaling_factor  # number of cells of fine grid
+config_file = "config.toml"
 
-sample_points = [0.1, 0.3, 0.5, 0.7, 0.9]
+with open(config_file, "rb") as f:
+    config = tomllib.load(f)
+print()
+print(f"==== parameters ====")
+print()
+with open(config_file, "r") as f:
+    for line in f.readlines():
+        print(line.strip())
+print()
+
+use_peds = config["model"]["use_peds"] == "True"  # use PEDS model?
+n = config["discretisation"]["n"]  # number of grid cells
+scaling_factor = config["discretisation"]["scaling_factor"]  # fine/coarse ratio
+Lambda = config["data"]["Lambda"]  # correlation length
+a_power = config["data"]["a_power"]  # power in log-normal distribution
+n_samples_train = config["data"]["n_samples_train"]  # number of training samples
+n_samples_valid = config["data"]["n_samples_valid"]  # number of validation samples
+batch_size = config["train"]["batch_size"]  # batch size
+n_epoch = config["train"]["n_epoch"]  # number of epochs
+n_lowres = n // scaling_factor  # number of cells of fine grid
+sample_points = config["qoi"]["sample_points"]
 
 f_rhs = torch.ones(size=(n,), dtype=torch.float)
 
