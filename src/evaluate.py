@@ -44,7 +44,13 @@ distribution = LogNormalDistribution1d(n, Lambda, a_power)
 physics_model_highres = DiffusionModel1d(f_rhs)
 qoi = QoISampling1d(sample_points)
 
-dataset = PEDSDataset(distribution, physics_model_highres, qoi)
+n_samples = n_samples_train + n_samples_valid + n_samples_test
+if not os.path.exists(data_filename):
+    dataset = PEDSDataset(distribution, physics_model_highres, qoi)
+    dataset.save(n_samples,data_filename)
+dataset = SavedDataset(data_filename)
+
+
 test_dataset = list(
     itertools.islice(
         dataset,
