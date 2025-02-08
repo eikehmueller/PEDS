@@ -1,12 +1,16 @@
 import itertools
+import os
 import tomllib
 import torch
 from torch.utils.tensorboard import SummaryWriter
 
+import numpy as np
+from matplotlib import pyplot as plt
+
 from peds.diffusion_model import DiffusionModel1d
 from peds.distributions import LogNormalDistribution1d
 from peds.quantity_of_interest import QoISampling1d
-from peds.datasets import PEDSDataset
+from peds.datasets import PEDSDataset, SavedDataset
 from peds.peds_model import PEDSModel
 
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
@@ -33,6 +37,7 @@ a_power = config["data"]["a_power"]
 n_samples_train = config["data"]["n_samples_train"]
 n_samples_valid = config["data"]["n_samples_valid"]
 n_samples_test = config["data"]["n_samples_test"]
+data_filename = config["data"]["filename"]
 batch_size = config["train"]["batch_size"]
 n_epoch = config["train"]["n_epoch"]
 sample_points = config["qoi"]["sample_points"]
@@ -102,4 +107,51 @@ for i, data in enumerate(test_dataloader):
     test_loss_avg += test_loss / (n_samples_test / batch_size)
     q_pred_coarse = coarse_model(alpha)
     coarse_loss = loss_fn(q_pred_coarse, q_target)
+
+data = next(iter(test_dataloader))
+alpha, q_target = data
+alpha = alpha.to(device)
+q_target = q_target.to(device)
+q_pred = model(alpha)
+
+q_pred_coarse = coarse_model(alpha)
+q_pred = q_pred.cpu().detach().numpy()
+q_pred_coarse = q_pred_coarse.cpu().detach().numpy()
+q_target = q_target.cpu().detach().numpy()
+
 print(f"test loss = {test_loss_avg:12.6f} coarse loss = {coarse_loss:12.6f}")
+
+# Visualise relative error
+
+colors = ["blue", "red", "black", "green", "orange"]
+plt.clf()
+plt.plot(sample_points,
+        np.mean(abs(q_pred - q_target) / q_target,axis=0), linestyle="-", marker="o",markersize=6,label="PEDS",
+    )
+plt.plot(sample_points,
+        np.mean(abs(q_pred_coarse - q_target) / q_target,axis=0),marker="o",markersize=6,
+        linestyle="--",label="coarse"
+    )    
+ax = plt.gca()
+#ax.set_yscale("log")
+plt.legend(loc="upper right")
+plt.savefig("evaluation.pdf", bbox_inches="tight")
+
+# visualise solution
+
+coarse_u_model = torch.nn.Sequential(downsampler, physics_model_lowres)
+u_pred = model.get_u(alpha).cpu().detach().numpy()
+u_pred_coarse = coarse_u_model(alpha).cpu().detach().numpy()
+alpha = alpha.cpu().detach().numpy()
+X_alpha = np.arange(alpha.shape[-1])/(alpha.shape[-1]-1)
+X_u = (np.arange(u_pred.shape[-1])+0.5)/u_pred.shape[-1]
+
+for j in range(alpha.shape[0]):
+    plt.clf()
+    plt.plot(sample_points,q_target[j,:],linewidth=0,marker="o",markersize=6,color="green",label=r"$Q_{\text{true}}$")
+    plt.plot(X_alpha,0.25*alpha[j,:],color="red",label=r"$\alpha$")
+    plt.plot(X_u,u_pred[j,:],color="blue",linestyle="-",label=r"$u_{\text{PEDS}}(x)$")
+    plt.plot(X_u,u_pred_coarse[j,:],color="blue",linestyle="--",label=r"$u_{\text{coarse}}(x)$")
+    plt.legend(loc="upper left")
+    plt.savefig(f"solution_{j:03d}.pdf", bbox_inches="tight")
+

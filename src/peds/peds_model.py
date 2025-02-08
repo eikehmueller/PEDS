@@ -42,8 +42,13 @@ class PEDSModel(torch.nn.Module):
 
     def forward(self, x):
         """Evaluate model"""
+        u = self.get_u(x)        
+        return self._qoi(u)
+
+    def get_u(self, x):
+        """Evaluate model"""
         alpha_ds = self._downsampler(x)
         alpha_nn = self._nn_model(x)
         alpha = self.w * alpha_nn + (1 - self.w) * alpha_ds
-        u = self._physics_model(alpha)
-        return self._qoi(u)
+        return self._physics_model(alpha)
+        

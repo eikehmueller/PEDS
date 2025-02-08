@@ -1,7 +1,8 @@
+import itertools
 import torch
+import pickle
 
-__all__ = ["PEDSDataset"]
-
+__all__ = ["PEDSDataset","SavedDataset"]
 
 class PEDSDataset(torch.utils.data.IterableDataset):
     """Dataset consisting of (geometry, QoI) pairs"""
@@ -27,3 +28,30 @@ class PEDSDataset(torch.utils.data.IterableDataset):
             u = self._physics_model(alpha)
             q = self._qoi(u)
             yield (alpha, q)
+
+    def save(self,n_samples, filename):
+        """Save dataset to disk
+        
+        :arg n_samples: number of samples to save
+        :arg filename: name of file to save to
+        """
+        data = []
+        for alpha, q in itertools.islice(iter(self),n_samples):
+            data.append([alpha.numpy(),q.numpy()])
+        with open(filename,"wb") as f:                        
+            pickle.dump(data,f)
+            
+
+class SavedDataset(torch.utils.data.IterableDataset):
+    """Dataset that can be read from disk"""
+    def __init__(self,filename):
+        with open(filename,"rb") as f:
+            self._data = pickle.load(f)            
+
+    def __iter__(self):
+        """Return a new sample"""
+        for alpha, q in self._data:            
+            yield (torch.tensor(alpha), torch.tensor(q))
+    
+    def __len__(self):
+        return len(self._data)
