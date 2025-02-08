@@ -1,4 +1,5 @@
 import itertools
+import os.path
 import tomllib
 import torch
 from torch.utils.tensorboard import SummaryWriter
@@ -6,7 +7,7 @@ from torch.utils.tensorboard import SummaryWriter
 from peds.diffusion_model import DiffusionModel1d
 from peds.distributions import LogNormalDistribution1d
 from peds.quantity_of_interest import QoISampling1d
-from peds.datasets import PEDSDataset
+from peds.datasets import PEDSDataset, SavedDataset
 from peds.peds_model import PEDSModel
 
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
@@ -33,6 +34,7 @@ a_power = config["data"]["a_power"]
 n_samples_train = config["data"]["n_samples_train"]
 n_samples_valid = config["data"]["n_samples_valid"]
 n_samples_test = config["data"]["n_samples_test"]
+data_filename = config["data"]["filename"]
 batch_size = config["train"]["batch_size"]
 n_epoch = config["train"]["n_epoch"]
 lr_initial = config["train"]["lr_initial"]
@@ -45,8 +47,13 @@ f_rhs = torch.ones(size=(n,), dtype=torch.float)
 distribution = LogNormalDistribution1d(n, Lambda, a_power)
 physics_model_highres = DiffusionModel1d(f_rhs)
 qoi = QoISampling1d(sample_points)
+n_samples = n_samples_train + n_samples_valid + n_samples_test
+if not os.path.exists(data_filename):
+    dataset = PEDSDataset(distribution, physics_model_highres, qoi)
+    dataset.save(n_samples,data_filename)
+dataset = SavedDataset(data_filename)
+assert len(dataset) == n_samples
 
-dataset = PEDSDataset(distribution, physics_model_highres, qoi)
 train_dataset = list(itertools.islice(dataset, 0, n_samples_train))
 valid_dataset = list(
     itertools.islice(dataset, n_samples_train, n_samples_train + n_samples_valid)
