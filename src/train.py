@@ -35,6 +35,8 @@ n_samples_valid = config["data"]["n_samples_valid"]
 n_samples_test = config["data"]["n_samples_test"]
 batch_size = config["train"]["batch_size"]
 n_epoch = config["train"]["n_epoch"]
+lr_initial = config["train"]["lr_initial"]
+lr_target = config["train"]["lr_final"]
 sample_points = config["qoi"]["sample_points"]
 n_lowres = n // scaling_factor
 
@@ -102,10 +104,13 @@ coarse_model = torch.nn.Sequential(downsampler, physics_model_lowres, qoi)
 
 
 loss_fn = torch.nn.MSELoss()
-optimizer = torch.optim.Adam(model.parameters(), lr=1e-3)
-scheduler = torch.optim.lr_scheduler.ExponentialLR(optimizer, gamma=0.99)
+gamma = (lr_target/lr_initial)**(1/n_epoch)
+print (f"learning rate decay factor = {gamma:8.5f}")
+optimizer = torch.optim.Adam(model.parameters(), lr=lr_initial)
+scheduler = torch.optim.lr_scheduler.ExponentialLR(optimizer, gamma=gamma)
 
 writer = SummaryWriter(flush_secs=5)
+print(f"epoch      :  training    validation    coarse")
 for epoch in range(n_epoch):
     train_loss_avg = 0
     for i, data in enumerate(train_dataloader):
