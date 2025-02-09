@@ -31,6 +31,25 @@ subject to the boundary conditions
 \end{equation}
 In a more abstract sense, let $V$ be the space of real-valued functions defined on $\Omega$. We want to find the map $\mathcal{F} : V\rightarrow V$ with $\mathcal{F}:\alpha \mapsto u(\alpha)$ where $u=u(\alpha)$ is defined by \eqref{eqn:PDE} and \eqref{eqn:boundary_condition}.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\paragraph{Higher dimensions}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+The problem can be extended to two dimensions by considering the domain $\Omega=[0,1]\times[0,1]$ and seeking $u(x,y)$:
+\begin{equation}
+    -\frac{\partial}{\partial x}\left(\exp[\alpha(x,y)]\frac{\partial u}{\partial x}(x,y)\right)-\frac{\partial}{\partial y}\left(\exp[\alpha(x,y)]\frac{\partial u}{\partial y}(x,y)\right) = f(x,y)\qquad\text{for all $0<x<1,0<y<1$}
+    \label{eqn:PDE_2d}
+\end{equation}
+subject to the boundary conditions 
+\begin{equation}
+    \begin{aligned}
+    u(x=0,y) &=0 \qquad{\text{(homogeneous Dirichlet)}}\\
+    \frac{\partial u}{\partial x}(x=1,y) &=-g_{\text{right}}(y)\exp[-\alpha(x=1,y)]\\
+    \frac{\partial u}{\partial x}(x,y=0) &=g_{\text{bottom}}(x)\exp[-\alpha(x,y=0)] \qquad{\text{(von Neumann)}}\\
+    \frac{\partial u}{\partial x}(x,y=1) &=-g_{\text{top}}(x)\exp[-\alpha(x,y=1)]
+    \end{aligned}
+    \label{eqn:boundary_condition_2d}
+\end{equation}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \paragraph{Physical interpretation}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 Note that by setting $K(x):=\exp[\alpha(x)]$, \eqref{eqn:PDE} can be written as $-\nabla\cdot (K\nabla u)=f$. So physically the problem is about finding the solution of the diffusion equation for a given spatially varying diffusion coefficient $K(x)>0$ which is parametrised by its logarithm $\alpha(x)$.
