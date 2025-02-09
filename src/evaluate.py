@@ -142,9 +142,13 @@ plt.savefig("evaluation.pdf", bbox_inches="tight")
 coarse_u_model = torch.nn.Sequential(downsampler, physics_model_lowres)
 u_pred = model.get_u(alpha).cpu().detach().numpy()
 u_pred_coarse = coarse_u_model(alpha).cpu().detach().numpy()
+
+u_true = physics_model_highres(alpha.cpu()).detach().numpy()
+
 alpha = alpha.cpu().detach().numpy()
 X_alpha = np.arange(alpha.shape[-1])/(alpha.shape[-1]-1)
 X_u = (np.arange(u_pred.shape[-1])+0.5)/u_pred.shape[-1]
+X_u_true = (np.arange(u_true.shape[-1])+0.5)/u_true.shape[-1]
 
 for j in range(alpha.shape[0]):
     plt.clf()
@@ -152,6 +156,7 @@ for j in range(alpha.shape[0]):
     plt.plot(X_alpha,0.1*np.exp(alpha[j,:]),color="red",label=r"$\frac{1}{10}\exp[\alpha(x)]$")
     plt.plot(X_u,u_pred[j,:],color="blue",linestyle="-",label=r"$u_{\text{PEDS}}(x)$")
     plt.plot(X_u,u_pred_coarse[j,:],color="blue",linestyle="--",label=r"$u_{\text{coarse}}(x)$")
+    plt.plot(X_u_true,u_true[j,:],color="blue",linestyle=":",label=r"$u_{\text{highres}}(x)$")
     plt.legend(loc="upper left")
     plt.savefig(f"solution_{j:03d}.pdf", bbox_inches="tight")
 
