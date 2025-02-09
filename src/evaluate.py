@@ -149,7 +149,7 @@ X_u = (np.arange(u_pred.shape[-1])+0.5)/u_pred.shape[-1]
 for j in range(alpha.shape[0]):
     plt.clf()
     plt.plot(sample_points,q_target[j,:],linewidth=0,marker="o",markersize=6,color="green",label=r"$Q_{\text{true}}$")
-    plt.plot(X_alpha,0.25*alpha[j,:],color="red",label=r"$\alpha$")
+    plt.plot(X_alpha,0.1*np.exp(alpha[j,:]),color="red",label=r"$\frac{1}{10}\exp[\alpha(x)]$")
     plt.plot(X_u,u_pred[j,:],color="blue",linestyle="-",label=r"$u_{\text{PEDS}}(x)$")
     plt.plot(X_u,u_pred_coarse[j,:],color="blue",linestyle="--",label=r"$u_{\text{coarse}}(x)$")
     plt.legend(loc="upper left")
