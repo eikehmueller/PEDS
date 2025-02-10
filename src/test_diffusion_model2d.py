@@ -17,6 +17,9 @@ def test_diffusion_model_2d():
     batchsize = 4
     m = 8
     f_rhs = rng.normal(size=(m, m))
-    alpha = torch.tensor(rng.normal(size=(batchsize, m + 1, m + 1)))
+    alpha = torch.tensor(rng.normal(size=(batchsize, m + 1, m + 1)), requires_grad=True)
     model = DiffusionModel2d(f_rhs)
     u = model(alpha)
+    external_grad = torch.ones_like(u)
+    u.backward(gradient=external_grad)
+    print(alpha.grad)

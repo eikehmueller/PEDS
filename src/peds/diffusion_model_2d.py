@@ -267,7 +267,7 @@ class DiffusionModel2dOperator(torch.autograd.Function):
                         w[..., r, s] * u[..., r, s - 1]
                         + w[..., r - 1, s - 1] * u[..., r - 1, s - 1]
                     )
-        return None, grad_output
+        return None, grad_input
 
 
 class DiffusionModel2d(torch.nn.Module):
