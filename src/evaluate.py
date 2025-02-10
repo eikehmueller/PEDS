@@ -52,7 +52,7 @@ qoi = QoISampling1d(sample_points)
 n_samples = n_samples_train + n_samples_valid + n_samples_test
 if not os.path.exists(data_filename):
     dataset = PEDSDataset(distribution, physics_model_highres, qoi)
-    dataset.save(n_samples,data_filename)
+    dataset.save(n_samples, data_filename)
 dataset = SavedDataset(data_filename)
 
 
@@ -125,15 +125,24 @@ print(f"test loss = {test_loss_avg:12.6f} coarse loss = {coarse_loss:12.6f}")
 
 colors = ["blue", "red", "black", "green", "orange"]
 plt.clf()
-plt.plot(sample_points,
-        np.mean(abs(q_pred - q_target) / q_target,axis=0), linestyle="-", marker="o",markersize=6,label="PEDS",
-    )
-plt.plot(sample_points,
-        np.mean(abs(q_pred_coarse - q_target) / q_target,axis=0),marker="o",markersize=6,
-        linestyle="--",label="coarse"
-    )    
+plt.plot(
+    sample_points,
+    np.mean(abs(q_pred - q_target) / q_target, axis=0),
+    linestyle="-",
+    marker="o",
+    markersize=6,
+    label="PEDS",
+)
+plt.plot(
+    sample_points,
+    np.mean(abs(q_pred_coarse - q_target) / q_target, axis=0),
+    marker="o",
+    markersize=6,
+    linestyle="--",
+    label="coarse",
+)
 ax = plt.gca()
-#ax.set_yscale("log")
+# ax.set_yscale("log")
 plt.legend(loc="upper right")
 plt.savefig("evaluation.pdf", bbox_inches="tight")
 
@@ -146,17 +155,43 @@ u_pred_coarse = coarse_u_model(alpha).cpu().detach().numpy()
 u_true = physics_model_highres(alpha.cpu()).detach().numpy()
 
 alpha = alpha.cpu().detach().numpy()
-X_alpha = np.arange(alpha.shape[-1])/(alpha.shape[-1]-1)
-X_u = (np.arange(u_pred.shape[-1])+0.5)/u_pred.shape[-1]
-X_u_true = (np.arange(u_true.shape[-1])+0.5)/u_true.shape[-1]
+X_alpha = np.arange(alpha.shape[-1]) / (alpha.shape[-1] - 1)
+X_u = (np.arange(u_pred.shape[-1]) + 0.5) / u_pred.shape[-1]
+X_u_true = (np.arange(u_true.shape[-1]) + 0.5) / u_true.shape[-1]
 
 for j in range(alpha.shape[0]):
     plt.clf()
-    plt.plot(sample_points,q_target[j,:],linewidth=0,marker="o",markersize=6,color="green",label=r"$Q_{\text{true}}$")
-    plt.plot(X_alpha,0.1*np.exp(alpha[j,:]),color="red",label=r"$\frac{1}{10}\exp[\alpha(x)]$")
-    plt.plot(X_u,u_pred[j,:],color="blue",linestyle="-",label=r"$u_{\text{PEDS}}(x)$")
-    plt.plot(X_u,u_pred_coarse[j,:],color="blue",linestyle="--",label=r"$u_{\text{coarse}}(x)$")
-    plt.plot(X_u_true,u_true[j,:],color="blue",linestyle=":",label=r"$u_{\text{highres}}(x)$")
+    plt.plot(
+        sample_points,
+        q_target[j, :],
+        linewidth=0,
+        marker="o",
+        markersize=6,
+        color="green",
+        label=r"$Q_{\text{true}}$",
+    )
+    plt.plot(
+        X_alpha,
+        0.1 * np.exp(alpha[j, :]),
+        color="red",
+        label=r"$\frac{1}{10}\exp[\alpha(x)]$",
+    )
+    plt.plot(
+        X_u, u_pred[j, :], color="blue", linestyle="-", label=r"$u_{\text{PEDS}}(x)$"
+    )
+    plt.plot(
+        X_u,
+        u_pred_coarse[j, :],
+        color="blue",
+        linestyle="--",
+        label=r"$u_{\text{coarse}}(x)$",
+    )
+    plt.plot(
+        X_u_true,
+        u_true[j, :],
+        color="blue",
+        linestyle=":",
+        label=r"$u_{\text{highres}}(x)$",
+    )
     plt.legend(loc="upper left")
     plt.savefig(f"solution_{j:03d}.pdf", bbox_inches="tight")
-

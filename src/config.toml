@@ -10,7 +10,7 @@ scaling_factor = 8 # ratio between fine and coarse grid cells
 sample_points = [0.1, 0.3, 0.5, 0.7, 0.9] # sample points
 
 [data]
-Lambda = 0.02           # correlation length
+Lambda = 0.02          # correlation length
 a_power = 2            # power in log-normal distribution
 n_samples_train = 2048 # number of training samples
 n_samples_valid = 32   # number of validation samples
@@ -18,7 +18,7 @@ n_samples_test = 32    # number of test samples
 filename = "data.npy"  # name of file with data
 
 [train]
-batch_size = 64        # batch size
-n_epoch = 512          # number of epochs
-lr_initial = 1.0e-2    # initial learning rate
-lr_final = 1.0e-3      # final learning rate
+batch_size = 64     # batch size
+n_epoch = 512       # number of epochs
+lr_initial = 1.0e-2 # initial learning rate
+lr_final = 1.0e-3   # final learning rate

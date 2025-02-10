@@ -50,7 +50,7 @@ qoi = QoISampling1d(sample_points)
 n_samples = n_samples_train + n_samples_valid + n_samples_test
 if not os.path.exists(data_filename):
     dataset = PEDSDataset(distribution, physics_model_highres, qoi)
-    dataset.save(n_samples,data_filename)
+    dataset.save(n_samples, data_filename)
 dataset = SavedDataset(data_filename)
 assert len(dataset) == n_samples
 
@@ -111,8 +111,8 @@ coarse_model = torch.nn.Sequential(downsampler, physics_model_lowres, qoi)
 
 
 loss_fn = torch.nn.MSELoss()
-gamma = (lr_target/lr_initial)**(1/n_epoch)
-print (f"learning rate decay factor = {gamma:8.5f}")
+gamma = (lr_target / lr_initial) ** (1 / n_epoch)
+print(f"learning rate decay factor = {gamma:8.5f}")
 optimizer = torch.optim.Adam(model.parameters(), lr=lr_initial)
 scheduler = torch.optim.lr_scheduler.ExponentialLR(optimizer, gamma=gamma)
 
