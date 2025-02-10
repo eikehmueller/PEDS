@@ -5,6 +5,7 @@
 *.log
 *.out
 *.fls
+src/*.pdf
 doc/problem_description.pdf
 *.synctex.gz
 __pycache__
