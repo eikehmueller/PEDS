@@ -404,18 +404,18 @@ From \eqref{diffusion_coefficients_2d} and \eqref{eqn:matrix_entries_2d} we can 
     \end{cases}
     \end{aligned}
 \end{equation}
-For each $(i,m)$ there are no more than 12 non-zero contributions, namely:
+For each index $(r,s)$ there are no more than 12 non-zero contributions, namely:
 \begin{equation}
     \begin{aligned}
     \frac{\partial L}{\partial\alpha^{(h)}_{rs}}
-    &= D^{(1)}_{rs} w_{rs}u_{rs}
-    + D^{(2)}_{rs} w_{r-1,s} u_{r-1,s}
-    + D^{(3)}_{rs} w_{r,s-1} u_{r,s-1}
-    + D^{(4)}_{rs} w_{r-1,s-1} u_{r-1,s-1}\\
-    &\quad+\;\;D^{(5)}_{rs} (w_{r-1,s} u_{rs} +  w_{r-1,s-1} u_{r,s-1})
-    + D^{(6)}_{rs} (w_{rs}u_{r-1,s} + w_{r,s-1}u_{r-1,s-1})\\
-    &\quad+\;\; D^{(7)}_{rs} (w_{r,s-1} u_{rs} +  w_{r-1,s-1} u_{r-1,s})
-    + D^{(8)}_{rs} (w_{rs} u_{r,s-1} + w_{r-1,s} u_{r-1,s-1})
+    &= -D^{(1)}_{rs} w_{rs}u_{rs}
+    - D^{(2)}_{rs} w_{r-1,s} u_{r-1,s}
+    - D^{(3)}_{rs} w_{r,s-1} u_{r,s-1}
+    - D^{(4)}_{rs} w_{r-1,s-1} u_{r-1,s-1}\\
+    &\quad-\;\;D^{(5)}_{rs} (w_{r-1,s} u_{rs} +  w_{r-1,s-1} u_{r,s-1})
+    - D^{(6)}_{rs} (w_{rs}u_{r-1,s} + w_{r,s-1}u_{r-1,s-1})\\
+    &\quad-\;\; D^{(7)}_{rs} (w_{r,s-1} u_{rs} +  w_{r-1,s-1} u_{r-1,s})
+    - D^{(8)}_{rs} (w_{rs} u_{r,s-1} + w_{r-1,s} u_{r-1,s-1})
     \end{aligned}\label{eqn:gradient_expansion_2d}
 \end{equation}
 The eight coefficients $D^{(1)}_{rs}, \dots, D^{(8)}_{rs}$ that appear in \eqref{eqn:gradient_expansion_2d} are
