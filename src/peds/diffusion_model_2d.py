@@ -4,7 +4,7 @@ import petsc4py
 
 from petsc4py import PETSc
 
-__all__ = ["Solver2d"]
+__all__ = ["Solver2d", "DiffusionModel2d"]
 
 
 class Solver2d:
@@ -127,9 +127,10 @@ class DiffusionModel2dOperator(torch.autograd.Function):
         solver = metadata["solver"]
         f_rhs = metadata["f_rhs"]
         ctx.metadata.update(metadata)
-        u = DiffusionModel2dOperator._solve(solver, input.cpu(), f_rhs.cpu()).to(
-            input.device
-        )
+        batch_dims = input.shape[:-2]
+        u = DiffusionModel2dOperator._solve(
+            solver, input.cpu(), f_rhs.cpu().expand(*batch_dims, -1, -1)
+        ).to(input.device)
         ctx.save_for_backward(input, u)
         return u
 
@@ -145,10 +146,9 @@ class DiffusionModel2dOperator(torch.autograd.Function):
         """
         if alpha.dim() == 2:
             # if there are no batch-dimensions simply solve
-            u = torch.tensor(
-                solver.solve(alpha.detach().numpy(), f_rhs.detach().numpy())
-            )
-        elif input.dim() > 2:
+            u = solver.solve(alpha.detach().numpy(), f_rhs.detach().numpy())
+
+        elif alpha.dim() > 2:
             # otherwise, flatten batch dimensions and solve in each of them
             batched_alpha = (
                 torch.flatten(alpha, start_dim=0, end_dim=-3).detach().numpy()
@@ -156,16 +156,16 @@ class DiffusionModel2dOperator(torch.autograd.Function):
             batched_f_rhs = (
                 torch.flatten(f_rhs, start_dim=0, end_dim=-3).detach().numpy()
             )
-            batched_u = torch.empty_like(batched_f_rhs)
+            batched_u = np.empty_like(batched_f_rhs)
             u = torch.tensor
             for ell in range(batched_alpha.shape[0]):
                 batched_u[ell, :, :] = solver.solve(
                     batched_alpha[ell, :, :], batched_f_rhs[ell, :, :]
                 )
-            u = torch.reshape(batched_u, f_rhs.shape)
+            u = batched_u.reshape(f_rhs.shape)
         else:
             raise RuntimeError("tensor needs to be at least two-dimensional")
-        return u
+        return torch.tensor(u)
 
     @staticmethod
     def backward(ctx, grad_output):
@@ -275,7 +275,7 @@ class DiffusionModel2d(torch.nn.Module):
     def __init__(self, f_rhs):
         """Initialise a new instance
 
-        :arg f_rhs: 1d tensor representing the right hand side"""
+        :arg f_rhs: 2d tensor representing the right hand side"""
         super().__init__()
         m = f_rhs.shape[-1]
         solver = Solver2d(m)
