@@ -8,7 +8,17 @@ __all__ = ["Solver2d"]
 
 
 class Solver2d:
-    """Solver for 2d diffusion model"""
+    """Solver for 2d diffusion model
+
+    Provides PETSc KSP wrapper for solving the diffusion problem
+
+        - div(exp(alpha(x,y)) grad(u(x,y))) = f_rhs(x,y)
+
+    on a unit square with grid consisting of m x m cells. For a given right hand side
+    (2d tensor of shape (m,m)) and field alpha (2d tensor of shape (m+1,m+1)) this computes
+    the 2d tensor of shape (m,m) which describes the solution in grid cells. The field alpha is
+    given at the vertices of the grid.
+    """
 
     def __init__(self, m):
         """Initialise new instance
@@ -16,7 +26,7 @@ class Solver2d:
         :arg m: number of grid cells in one dimension
         """
         self._m = m
-        n = self._m**2
+        # Create row-pointer and column-index arrays
         self._row_ptr = [0]
         self._col_indices = []
         nnz = 0
@@ -37,12 +47,17 @@ class Solver2d:
                     self._col_indices.append(self._m * j + k + 1)
                     nnz += 1
                 self._row_ptr.append(nnz)
+        # Create sparse matrix, KSP and PETSc solution vector
+        n = self._m**2
         self._petsc_mat = PETSc.Mat().createAIJ(n, nnz=nnz)
         self._ksp = PETSc.KSP().create()
         self._u_vec = PETSc.Vec().createSeq(n)
 
     def _set_matrix_values(self, alpha):
-        """Set values in PETSc matrix"""
+        """Set values in PETSc matrix
+
+        :arg alpha: tensor of shape (m+1,m+1) which describes the field alpha at grid vertices
+        """
         values = np.empty(self._row_ptr[-1])
         nnz = 0
         # Construct PETSc matrix entries
@@ -72,13 +87,12 @@ class Solver2d:
         self._petsc_mat.assemble()
 
     def solve(self, alpha, f_rhs):
-        """Solve for a given alpha
+        """Solve for a given alpha and right hand side
 
         :arg alpha: diffusion field alpha, stored as a 2d tensor of shape (m+1,m+1)
-        :arg rhs: given RHS
+        :arg rhs: given RHS, stored as a 2d tensor of shape (m,m)
         """
         self._set_matrix_values(alpha)
-        print("HERE")
         self._ksp.setOperators(self._petsc_mat)
         rhs_vec = PETSc.Vec().createWithArray(np.asarray(f_rhs).flatten())
         self._ksp.solve(rhs_vec, self._u_vec)
@@ -93,8 +107,10 @@ class DiffusionModel2dOperator(torch.autograd.Function):
 
     The diffusion equation is
 
-        -div(K(x)grad(u)) = f(x)
+        -div(exp(alpha(x,y)grad(u(x,y))) = f(x,y)
 
+    and this class provides a differentiable operator from alpha (a 2d tensor of shape
+    (a,m+1,m+1) with 'a' standing for batch dimensions) to u (a 2d tensor of shape (a,m,m)).
     """
 
     def __init__(self):
@@ -111,18 +127,29 @@ class DiffusionModel2dOperator(torch.autograd.Function):
         solver = metadata["solver"]
         f_rhs = metadata["f_rhs"]
         ctx.metadata.update(metadata)
-        alpha = input.cpu()
-        u = DiffusionModel2dOperator._solve(solver, alpha, f_rhs.cpu())
-        ctx.save_for_backward(alpha, u)
-        return u.to(input.device)
+        u = DiffusionModel2dOperator._solve(solver, input.cpu(), f_rhs.cpu()).to(
+            input.device
+        )
+        ctx.save_for_backward(input, u)
+        return u
 
     @staticmethod
     def _solve(solver, alpha, f_rhs):
+        """Batched solve
+
+        Solve the linear system A u = f for given alpha  and right hand side f
+
+        :arg solver: PETSc solver wrapper class
+        :arg alpha: diffusion tensor alpha, shape = (a,m+1,m+1)
+        :arg f_rhs: right hand side f, shape = (a,m,m)
+        """
         if alpha.dim() == 2:
+            # if there are no batch-dimensions simply solve
             u = torch.tensor(
                 solver.solve(alpha.detach().numpy(), f_rhs.detach().numpy())
             )
         elif input.dim() > 2:
+            # otherwise, flatten batch dimensions and solve in each of them
             batched_alpha = (
                 torch.flatten(alpha, start_dim=0, end_dim=-3).detach().numpy()
             )
@@ -155,11 +182,12 @@ class DiffusionModel2dOperator(torch.autograd.Function):
         )
         alpha, u = ctx.saved_tensors
         solver = ctx.metadata["solver"]
-        w = DiffusionModel2dOperator._solve(solver, alpha, grad_output.cpu())
+        w = DiffusionModel2dOperator._solve(solver, alpha.cpu(), grad_output.cpu()).to(
+            grad_output.device
+        )
         grad_input = torch.zeros(
             grad_input_shape, device=grad_output.device, dtype=grad_output.dtype
         )
-        alpha = alpha.to(grad_input.device)
         for r in range(grad_output.shape[-2]):
             for s in range(grad_output.shape[-1]):
                 # D^(1)_{rs}
