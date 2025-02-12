@@ -26,6 +26,7 @@ class Solver2d:
         :arg m: number of grid cells in one dimension
         """
         self._m = m
+        self._hinv2 = m**2
         # Create row-pointer and column-index arrays
         self._row_ptr = [0]
         self._col_indices = []
@@ -63,25 +64,46 @@ class Solver2d:
         # Construct PETSc matrix entries
         for j in range(self._m):
             for k in range(self._m):
-                K_left = np.exp(0.5 * (alpha[j, k] + alpha[j, k + 1]))
-                K_right = np.exp(0.5 * (alpha[j + 1, k] + alpha[j + 1, k + 1]))
-                K_bottom = np.exp(0.5 * (alpha[j, k] + alpha[j + 1, k]))
-                K_top = np.exp(0.5 * (alpha[j, k + 1] + alpha[j + 1, k + 1]))
-                values[nnz] = K_left + K_right + K_bottom + K_top
-                if j == 0:
-                    values[nnz] += K_left
-                nnz += 1
+                # left flux
                 if j > 0:
-                    values[nnz] = -K_left
-                    nnz += 1
+                    K_left = np.exp(0.5 * (alpha[j, k] + alpha[j, k + 1]))
+                else:
+                    K_left = 0
+                # right flux
                 if j < self._m - 1:
-                    values[nnz] = -K_right
-                    nnz += 1
+                    K_right = np.exp(0.5 * (alpha[j + 1, k] + alpha[j + 1, k + 1]))
+                else:
+                    K_right = 0
+                # bottom flux
                 if k > 0:
-                    values[nnz] = -K_bottom
-                    nnz += 1
+                    K_bottom = np.exp(0.5 * (alpha[j, k] + alpha[j + 1, k]))
+                else:
+                    K_bottom = 0
+                # top flux
                 if k < self._m - 1:
-                    values[nnz] = -K_top
+                    K_top = np.exp(0.5 * (alpha[j, k + 1] + alpha[j + 1, k + 1]))
+                else:
+                    K_top = 0
+                # diagonal value
+                values[nnz] = self._hinv2 * (K_left + K_right + K_bottom + K_top)
+                if j == 0:
+                    values[nnz] += self._hinv2 * self._hinv2 * K_left
+                nnz += 1
+                # left coupling
+                if j > 0:
+                    values[nnz] = -self._hinv2 * K_left
+                    nnz += 1
+                # right coupling
+                if j < self._m - 1:
+                    values[nnz] = -self._hinv2 * K_right
+                    nnz += 1
+                # bottom coupling
+                if k > 0:
+                    values[nnz] = -self._hinv2 * K_bottom
+                    nnz += 1
+                # top coupling
+                if k < self._m - 1:
+                    values[nnz] = -self._hinv2 * K_top
                     nnz += 1
         self._petsc_mat.setValuesCSR(self._row_ptr, self._col_indices, values)
         self._petsc_mat.assemble()
@@ -188,85 +210,46 @@ class DiffusionModel2dOperator(torch.autograd.Function):
         grad_input = torch.zeros(
             grad_input_shape, device=grad_output.device, dtype=grad_output.dtype
         )
-        for r in range(grad_output.shape[-2]):
-            for s in range(grad_output.shape[-1]):
-                # D^(1)_{rs}
-                D_rs = 0.5 * (
-                    torch.exp(0.5 * (alpha[..., r, s] + alpha[..., r, s + 1]))
-                    + torch.exp(0.5 * (alpha[..., r, s] + alpha[..., r + 1, s]))
-                )
-                if r == 0:
-                    D_rs += 0.5 * torch.exp(
-                        0.5 * (alpha[..., r, s] + alpha[..., r, s + 1])
+        m = grad_output.shape[-1]
+        h_inv2 = m**2
+        for r in range(m):
+            for s in range(m):
+                if (1 <= r) and (r <= m - 1) and (1 <= s):
+                    F_x = (
+                        0.5
+                        * h_inv2
+                        * torch.exp(0.5 * (alpha[..., r, s - 1] + alpha[..., r, s]))
                     )
-                grad_input[..., r, s] -= D_rs[...] * w[..., r, s] * u[..., r, s]
-                # D^(2)_{rs}
-                if r > 0:
-                    D_rs = 0.5 * (
-                        torch.exp(0.5 * (alpha[..., r, s] + alpha[..., r, s + 1]))
-                        + torch.exp(0.5 * (alpha[..., r, s] + alpha[..., r - 1, s]))
-                    )
-                    grad_input[..., r, s] -= (
-                        D_rs[...] * w[..., r - 1, s] * u[..., r - 1, s]
-                    )
-                # D^(3)_{rs}
-                if s > 0:
-                    D_rs = 0.5 * (
-                        torch.exp(0.5 * (alpha[..., r, s] + alpha[..., r, s - 1]))
-                        + torch.exp(0.5 * (alpha[..., r, s] + alpha[..., r + 1, s]))
-                    )
-                    if r > 0:
-                        D_rs += 0.5 * torch.exp(
-                            0.5 * (alpha[..., r, s] + alpha[..., r, s - 1])
-                        )
-                    grad_input[..., r, s] -= (
-                        D_rs[...] * w[..., r, s - 1] * u[..., r, s - 1]
-                    )
-                # D^(4)_{rs}
-                if r > 0 and s > 0:
-                    D_rs = 0.5 * (
-                        torch.exp(0.5 * (alpha[..., r, s] + alpha[..., r, s - 1]))
-                        + torch.exp(0.5 * (alpha[..., r, s] + alpha[..., r - 1, s]))
-                    )
-                    grad_input[..., r, s] -= (
-                        D_rs[...] * w[..., r - 1, s - 1] * u[..., r - 1, s - 1]
-                    )
-                # D^(5)_{rs}
-                if r > 0:
-                    D_rs = -0.5 * torch.exp(
-                        0.5 * (alpha[..., r, s] + alpha[..., r, s + 1])
-                    )
-                    grad_input[..., r, s] -= D_rs[...] * (
-                        w[..., r - 1, s] * u[..., r, s]
-                        + w[..., r - 1, s - 1] * u[..., r, s - 1]
-                    )
-                # D^(6)_{rs}
-                if s > 0:
-                    D_rs = -0.5 * torch.exp(
-                        0.5 * (alpha[..., r, s] + alpha[..., r + 1, s])
-                    )
-                    grad_input[..., r, s] -= D_rs[...] * (
-                        w[..., r, s] * u[..., r - 1, s]
-                        + w[..., r, s - 1] * u[..., r - 1, s - 1]
-                    )
-                # D^(7)_{rs}
-                if r > 0:
-                    D_rs = -0.5 * torch.exp(
-                        0.5 * (alpha[..., r, s] + alpha[..., r, s - 1])
-                    )
-                    grad_input[..., r, s] -= D_rs[...] * (
+                    z_x = (
                         w[..., r, s - 1] * u[..., r, s - 1]
-                        + w[..., r, s - 1] * u[..., r - 1, s - 1]
-                    )
-                # D^(8)_{rs}
-                if s > 0:
-                    D_rs = -0.5 * torch.exp(
-                        0.5 * (alpha[..., r, s] + alpha[..., r - 1, s])
-                    )
-                    grad_input[..., r, s] -= D_rs[...] * (
-                        w[..., r, s] * u[..., r, s - 1]
                         + w[..., r - 1, s - 1] * u[..., r - 1, s - 1]
+                        - w[..., r, s - 1] * u[..., r - 1, s - 1]
+                        - w[..., r - 1, s - 1] * u[..., r, s - 1]
                     )
+                    grad_input[..., r, s] -= F_x * z_x
+                    grad_input[..., r, s - 1] -= F_x * z_x
+                if (1 <= r) and (1 <= s) and (s <= m - 1):
+                    F_y = (
+                        0.5
+                        * h_inv2
+                        * torch.exp(0.5 * (alpha[..., r - 1, s] + alpha[..., r, s]))
+                    )
+                    z_y = (
+                        w[..., r - 1, s] * u[..., r - 1, s]
+                        + w[..., r - 1, s - 1] * u[..., r - 1, s - 1]
+                        - w[..., r - 1, s] * u[..., r - 1, s - 1]
+                        - w[..., r - 1, s - 1] * u[..., r - 1, s]
+                    )
+                    grad_input[..., r, s] -= F_y * z_y
+                    grad_input[..., r - 1, s] -= F_y * z_y
+                if (r == 0) and (s <= m - 1):
+                    F_y0 = (
+                        0.5
+                        * h_inv2
+                        * torch.exp(0.5 * (alpha[..., r, s] + alpha[..., r, s + 1]))
+                    )
+                    z_y = w[..., r, s] * u[..., r, s]
+                    grad_input[..., r, s] -= 2 * F_y0 * z_y
         return None, grad_input
 
 
