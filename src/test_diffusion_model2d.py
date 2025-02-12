@@ -20,6 +20,13 @@ def test_diffusion_model_2d():
     alpha = torch.tensor(rng.normal(size=(batchsize, m + 1, m + 1)), requires_grad=True)
     model = DiffusionModel2d(f_rhs)
     u = model(alpha)
-    external_grad = torch.ones_like(u)
-    u.backward(gradient=external_grad)
-    print(alpha.grad)
+    w = torch.tensor(rng.normal(size=(batchsize, m, m)))
+    alpha_hat = torch.tensor(rng.normal(size=(batchsize, m + 1, m + 1)))
+    u.backward(gradient=w)
+    print(alpha_hat.shape, alpha.grad.shape)
+    print(torch.sum(alpha_hat * alpha.grad, dim=[-2, -1]))
+    epsilon = 1.0e-6
+    alpha = alpha.detach()
+
+    manual_gradient = (model(alpha + epsilon * alpha_hat) - model(alpha)) / epsilon
+    print(torch.sum(w * manual_gradient, dim=[-2, -1]))
