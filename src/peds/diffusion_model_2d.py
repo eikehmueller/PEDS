@@ -68,10 +68,7 @@ class Solver2d:
         for j in range(self._m):
             for k in range(self._m):
                 # left flux
-                if j > 0:
-                    K_left = np.exp(0.5 * (alpha[j, k] + alpha[j, k + 1]))
-                else:
-                    K_left = 0
+                K_left = np.exp(0.5 * (alpha[j, k] + alpha[j, k + 1]))
                 # right flux
                 if j < self._m - 1:
                     K_right = np.exp(0.5 * (alpha[j + 1, k] + alpha[j + 1, k + 1]))
@@ -90,8 +87,7 @@ class Solver2d:
                 # diagonal value
                 values[nnz] = self._hinv2 * (K_left + K_right + K_bottom + K_top)
                 if j == 0:
-                    K_left = np.exp(0.5 * (alpha[j, k] + alpha[j, k + 1]))
-                    values[nnz] += 2 * self._hinv2 * K_left
+                    values[nnz] += self._hinv2 * K_left
                 nnz += 1
                 # left coupling
                 if j > 0:
