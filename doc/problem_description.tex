@@ -210,12 +210,12 @@ A^{(h)} u^{(h)} = \widetilde{f}^{(h)} := f^{(h)}-\frac{1}{h}\widehat{g}^{(h)} \l
 where in a slight abuse of notation we write $u^{(h)}$, $\alpha^{(h)}$ both for the two-dimensional tensors and the corresponding flattened vectors with the same entries. The non-zero entries of the $n\times n$ matrix $A^{(h)} = A^{(h)}(\alpha^{(h)})$ are given by
 \begin{equation}
     \begin{aligned}
-    h^2A_{\nu(j,k)\nu(j,k)} &= 2\Theta_{0}^{1}(j)\Theta_0^m(k) K^{(h)}_{j,k+\frac{1}{2}}+\Theta_{1}^{m}(j)\Theta_0^m(k) K^{(h)}_{j,k+\frac{1}{2}} + \Theta_{0}^{m-1}(j)\Theta_0^m(k)K^{(h)}_{j+1,k+\frac{1}{2}}\\
-    &\quad+\;\; \Theta_0^m(j)\Theta_{1}^{m}(k)K^{(h)}_{j+\frac{1}{2},k}+ \Theta_0^m(j)\Theta_{0}^{m-1}(k)K^{(h)}_{j+\frac{1}{2},k+1}\\
-    h^2A_{\nu(j,k)\nu(j-1,k)} &= -\Theta_1^m(j)\Theta_0^m(k) K^{(h)}_{j,k+\frac{1}{2}}\\
-    h^2A_{\nu(j,k)\nu(j+1,k)} &= -\Theta_0^{m-1}(j)\Theta_0^m(k)K^{(h)}_{j+1,k+\frac{1}{2}}\\
-    h^2A_{\nu(j,k)\nu(j,k-1)} &= -\Theta_0^m(j)\Theta_1^m(k)K^{(h)}_{j+\frac{1}{2},k}\\
-    h^2A_{\nu(j,k)\nu(j,k+1)} &= -\Theta_0^m(j)\Theta_0^{m-1}(k)K^{(h)}_{j+\frac{1}{2},k+1}
+    A^{(h)}_{\nu(j,k)\nu(j,k)} &= 2\Theta_{0}^{1}(j)\Theta_0^m(k) \frac{1}{h^2}K^{(h)}_{j,k+\frac{1}{2}}+\Theta_{1}^{m}(j)\Theta_0^m(k) \frac{1}{h^2}K^{(h)}_{j,k+\frac{1}{2}} + \Theta_{0}^{m-1}(j)\Theta_0^m(k)\frac{1}{h^2}K^{(h)}_{j+1,k+\frac{1}{2}}\\
+    &\quad+\;\; \Theta_0^m(j)\Theta_{1}^{m}(k)\frac{1}{h^2}K^{(h)}_{j+\frac{1}{2},k}+ \Theta_0^m(j)\Theta_{0}^{m-1}(k)\frac{1}{h^2}K^{(h)}_{j+\frac{1}{2},k+1}\\
+    A^{(h)}_{\nu(j,k)\nu(j-1,k)} &= -\Theta_1^m(j)\Theta_0^m(k)\frac{1}{h^2} K^{(h)}_{j,k+\frac{1}{2}}\\
+    A^{(h)}_{\nu(j,k)\nu(j+1,k)} &= -\Theta_0^{m-1}(j)\Theta_0^m(k)\frac{1}{h^2}K^{(h)}_{j+1,k+\frac{1}{2}}\\
+    A^{(h)}_{\nu(j,k)\nu(j,k-1)} &= -\Theta_0^m(j)\Theta_1^m(k)\frac{1}{h^2}K^{(h)}_{j+\frac{1}{2},k}\\
+    A^{(h)}_{\nu(j,k)\nu(j,k+1)} &= -\Theta_0^m(j)\Theta_0^{m-1}(k)\frac{1}{h^2}K^{(h)}_{j+\frac{1}{2},k+1}
     \end{aligned}\label{eqn:matrix_entries_2d}
 \end{equation}
 where we defined the following function for integer $i$:
@@ -227,9 +227,9 @@ where we defined the following function for integer $i$:
 \end{equation}
 The non-zero entries of the vector $\widehat{g}^{(h)}\in\mathbb{R}^n$ are given by
 \begin{xalignat}{3}
-    \widehat{g}^{(h)_{\nu(m-1,k)}} &= g^{(\text{right})}_k, &
-    \widehat{g}^{(h)_{\nu(j,0)}} &= g^{(\text{bottom})}_j, &
-    \widehat{g}^{(h)_{\nu(j,m-1)}} &= g^{(\text{top})}_j.
+    \widehat{g}^{(h)}_{\nu(m-1,k)} &= g^{(\text{right})}_k, &
+    \widehat{g}^{(h)}_{\nu(j,0)} &= g^{(\text{bottom})}_j, &
+    \widehat{g}^{(h)}_{\nu(j,m-1)} &= g^{(\text{top})}_j.
 \end{xalignat}
 Again, by solving \eqref{eqn:discrete_system_2d} we can construct a solution map $\mathcal{F}(\alpha^{(h)})=u^{(h)}$ as in \eqref{eqn:solution_map}.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -385,23 +385,23 @@ For each index pair $(r,s)$ we have
     &\quad - F^{(x)}_{r+1,s}\left(w_{r,s}u_{r,s}+w_{r,s-1}u_{r,s-1}-w_{r,s}u_{r,s-1}-w_{r,s-1}u_{r,s}\right)\\
     &\quad -F^{(y)}_{r,s}\left(w_{r,s-1}u_{r,s-1}+w_{r-1,s-1}u_{r-1,s-1}-w_{r,s-1}u_{r-1,s-1}-w_{r-1,s-1}u_{r,s-1}\right)\\
      &\quad - F^{(y)}_{r,s+1}\left(w_{r,s}u_{r,s}+w_{r-1,s}u_{r-1,s}-w_{r,s}u_{r-1,s}-w_{r-1,s}u_{rs}\right)\\
-    &\quad - 2F^{(0)}_{r,s}w_{r,s}u_{r,s}
+    &\quad - 2F^{(x,0)}_{r,s}w_{r,s}u_{r,s}
     \end{aligned}\label{eqn:gradient_expansion_2d}
 \end{equation}
 The coefficients $F^{(x)}_{r,s}$, $F^{(y)}_{r,s}$ and $F^{(0)}_{r,s}$ that appear in \eqref{eqn:gradient_expansion_2d} are
 \begin{equation}
     \begin{aligned}
-        F^{(x)}_{r,s} &:= \Theta_1^{m+1}(r)\Theta_1^{m}(s)K^{(h)}_{r-\frac{1}{2},s}
+        F^{(x)}_{r,s} &:= \frac{1}{2h^2}\Theta_1^{m+1}(r)\Theta_1^{m}(s)K^{(h)}_{r-\frac{1}{2},s}
         =\begin{cases}
-            K^{(h)}_{r-\frac{1}{2},s} & \text{for $1\le r\le m$, $1\le s\le m-1$}\\
+            \frac{1}{2h^2}K^{(h)}_{r-\frac{1}{2},s} & \text{for $1\le r\le m$, $1\le s\le m-1$}\\
             0 & \text{otherwise}
         \end{cases}\\
-        F^{(y)}_{r,s} &:= \Theta_1^{m}(r)\Theta_1^{m+1}(s)K^{(h)}_{r,s-\frac{1}{2}}=\begin{cases}
-            K^{(h)}_{r,s-\frac{1}{2}} & \text{for $1\le r\le m-1$, $1\le s\le m$}\\
+        F^{(y)}_{r,s} &:= \frac{1}{2h^2}\Theta_1^{m}(r)\Theta_1^{m+1}(s)K^{(h)}_{r,s-\frac{1}{2}}=\begin{cases}
+            \frac{1}{2h^2}K^{(h)}_{r,s-\frac{1}{2}} & \text{for $1\le r\le m-1$, $1\le s\le m$}\\
             0 & \text{otherwise}
         \end{cases}\\
-        F^{(0)}_{r,s} &:= \Theta_0^1(r)\Theta_0^m(s)K^{(h)}_{r,s+\frac{1}{2}}=\begin{cases}
-            K^{(h)}_{r,s+\frac{1}{2}} & \text{for $r=0$, $0\le s\le m-1$}\\
+        F^{(x,0)}_{r,s} &:= \frac{1}{2h^2}\Theta_0^1(r)\Theta_0^m(s)K^{(h)}_{r,s+\frac{1}{2}}=\begin{cases}
+            \frac{1}{2h^2}K^{(h)}_{r,s+\frac{1}{2}} & \text{for $r=0$, $0\le s\le m-1$}\\
             0 & \text{otherwise}
         \end{cases}
     \end{aligned}
