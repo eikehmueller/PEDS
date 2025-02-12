@@ -381,26 +381,26 @@ For each index pair $(r,s)$ we have
 \begin{equation}
     \begin{aligned}
     \frac{\partial L}{\partial\alpha^{(h)}_{rs}}
-    &= - F^{(x)}_{r,s}\left(w_{r-1,s}u_{r-1,s}+w_{r-1,s-1}u_{r-1,s-1}-w_{r-1,s}u_{r-1,s-1}-w_{r-1,s-1}u_{r-1,s}\right)\\
-    &\quad - F^{(x)}_{r+1,s}\left(w_{r,s}u_{r,s}+w_{r,s-1}u_{r,s-1}-w_{r,s}u_{r,s-1}-w_{r,s-1}u_{r,s}\right)\\
-    &\quad -F^{(y)}_{r,s}\left(w_{r,s-1}u_{r,s-1}+w_{r-1,s-1}u_{r-1,s-1}-w_{r,s-1}u_{r-1,s-1}-w_{r-1,s-1}u_{r,s-1}\right)\\
-     &\quad - F^{(y)}_{r,s+1}\left(w_{r,s}u_{r,s}+w_{r-1,s}u_{r-1,s}-w_{r,s}u_{r-1,s}-w_{r-1,s}u_{r,s}\right)\\
-    &\quad - 2F^{(x,0)}_{r,s}w_{r,s}u_{r,s}
+    &= -F^{(x)}_{r,s}\left(w_{r,s-1}u_{r,s-1}+w_{r-1,s-1}u_{r-1,s-1}-w_{r,s-1}u_{r-1,s-1}-w_{r-1,s-1}u_{r,s-1}\right)\\
+     &\quad - F^{(x)}_{r,s+1}\left(w_{r,s}u_{r,s}+w_{r-1,s}u_{r-1,s}-w_{r,s}u_{r-1,s}-w_{r-1,s}u_{r,s}\right)\\
+     &\quad- F^{(y)}_{r,s}\left(w_{r-1,s}u_{r-1,s}+w_{r-1,s-1}u_{r-1,s-1}-w_{r-1,s}u_{r-1,s-1}-w_{r-1,s-1}u_{r-1,s}\right)\\
+     &\quad - F^{(y)}_{r+1,s}\left(w_{r,s}u_{r,s}+w_{r,s-1}u_{r,s-1}-w_{r,s}u_{r,s-1}-w_{r,s-1}u_{r,s}\right)\\
+    &\quad - 2F^{(y,0)}_{r,s}w_{r,s}u_{r,s}
     \end{aligned}\label{eqn:gradient_expansion_2d}
 \end{equation}
 The coefficients $F^{(x)}_{r,s}$, $F^{(y)}_{r,s}$ and $F^{(0)}_{r,s}$ that appear in \eqref{eqn:gradient_expansion_2d} are
 \begin{equation}
     \begin{aligned}
-        F^{(x)}_{r,s} &:= \frac{1}{2h^2}\Theta_1^{m+1}(r)\Theta_1^{m}(s)K^{(h)}_{r-\frac{1}{2},s}
+        F^{(x)}_{r,s} &:= \frac{1}{2h^2}\Theta_1^{m}(r)\Theta_1^{m+1}(s)K^{(h)}_{r,s-\frac{1}{2}}=\begin{cases}
+            \frac{1}{2h^2}K^{(h)}_{r,s-\frac{1}{2}} & \text{for $1\le r\le m-1$, $1\le s\le m$}\\
+            0 & \text{otherwise}
+        \end{cases}\\
+        F^{(y)}_{r,s} &:= \frac{1}{2h^2}\Theta_1^{m+1}(r)\Theta_1^{m}(s)K^{(h)}_{r-\frac{1}{2},s}
         =\begin{cases}
             \frac{1}{2h^2}K^{(h)}_{r-\frac{1}{2},s} & \text{for $1\le r\le m$, $1\le s\le m-1$}\\
             0 & \text{otherwise}
         \end{cases}\\
-        F^{(y)}_{r,s} &:= \frac{1}{2h^2}\Theta_1^{m}(r)\Theta_1^{m+1}(s)K^{(h)}_{r,s-\frac{1}{2}}=\begin{cases}
-            \frac{1}{2h^2}K^{(h)}_{r,s-\frac{1}{2}} & \text{for $1\le r\le m-1$, $1\le s\le m$}\\
-            0 & \text{otherwise}
-        \end{cases}\\
-        F^{(x,0)}_{r,s} &:= \frac{1}{2h^2}\Theta_0^1(r)\Theta_0^m(s)K^{(h)}_{r,s+\frac{1}{2}}=\begin{cases}
+        F^{(y,0)}_{r,s} &:= \frac{1}{2h^2}\Theta_0^1(r)\Theta_0^m(s)K^{(h)}_{r,s+\frac{1}{2}}=\begin{cases}
             \frac{1}{2h^2}K^{(h)}_{r,s+\frac{1}{2}} & \text{for $r=0$, $0\le s\le m-1$}\\
             0 & \text{otherwise}
         \end{cases}
