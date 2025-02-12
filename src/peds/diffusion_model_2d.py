@@ -212,8 +212,8 @@ class DiffusionModel2dOperator(torch.autograd.Function):
         )
         m = grad_output.shape[-1]
         h_inv2 = m**2
-        for r in range(m):
-            for s in range(m):
+        for r in range(m + 1):
+            for s in range(m + 1):
                 if (1 <= r) and (r <= m - 1) and (1 <= s):
                     F_x = (
                         0.5
