@@ -2,6 +2,8 @@ import torch
 import numpy as np
 import petsc4py
 
+petsc4py.init("-ksp_type preonly -pc_type lu")
+
 from petsc4py import PETSc
 
 __all__ = ["Solver2d", "DiffusionModel2d"]
@@ -52,6 +54,7 @@ class Solver2d:
         n = self._m**2
         self._petsc_mat = PETSc.Mat().createAIJ(n, nnz=nnz)
         self._ksp = PETSc.KSP().create()
+        self._ksp.setFromOptions()
         self._u_vec = PETSc.Vec().createSeq(n)
 
     def _set_matrix_values(self, alpha):
@@ -87,7 +90,8 @@ class Solver2d:
                 # diagonal value
                 values[nnz] = self._hinv2 * (K_left + K_right + K_bottom + K_top)
                 if j == 0:
-                    values[nnz] += self._hinv2 * self._hinv2 * K_left
+                    K_left = np.exp(0.5 * (alpha[j, k] + alpha[j, k + 1]))
+                    values[nnz] += 2 * self._hinv2 * K_left
                 nnz += 1
                 # left coupling
                 if j > 0:
