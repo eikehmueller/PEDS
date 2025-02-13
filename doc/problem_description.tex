@@ -362,14 +362,14 @@ In two dimensions we can write
 \end{equation}
 where again $u$ and $w$ are obtained by solving \eqref{eqn:transpose_solutions}. The sparse tensor $D(\alpha^{(h)})$ is given by
 \begin{equation}
-    (D_{rs}(\alpha^{(h)}))_{jk,j'k'} = \frac{A(\alpha^{(h)})_{\nu(j,k)\nu(j',k')}}{\partial \alpha^{(h)}_{\nu(r,s)}}
+    (D_{rs}(\alpha^{(h)}))_{jk,j'k'} = \frac{A(\alpha^{(h)})_{\nu(j,k)\nu(j',k')}}{\partial \alpha^{(h)}_{r,s}}
 \end{equation}
 From \eqref{diffusion_coefficients_2d} and \eqref{eqn:matrix_entries_2d} we can work out the non-zero entries of $D(\alpha^{(h)})$:
 \begin{equation}
     \begin{aligned}
     (D_{jk})_{jk,jk} &= \frac{1}{2h^2}\left(2\Theta_0^1(j)\Theta_0^m(k)K^{(h)}_{j,k+\frac{1}{2}}+\Theta_1^m(j)\Theta_0^m(k)K^{(h)}_{j,k+\frac{1}{2}}+\Theta_0^m(j)\Theta_1^m(k)K^{(h)}_{j+\frac{1}{2},k}\right)\\
     (D_{j+1,k})_{jk,jk} &= \frac{1}{2h^2}\left(\Theta_0^{m-1}(j)\Theta_0^m(k)K^{(h)}_{j+1,k+\frac{1}{2}}+\Theta_0^m(j)\Theta_1^m(k)K^{(h)}_{j+\frac{1}{2},k}\right)\\
-    (D_{j,k+1})_{jk,jk} &= \frac{1}{2h^2}\left(\Theta_1^{m}(j)\Theta_0^m(k)K^{(h)}_{j,k+\frac{1}{2}}+\Theta_0^m(j)\Theta_0^{m-1}(k)K^{(h)}_{j+\frac{1}{2},k+1}\right)\\
+    (D_{j,k+1})_{jk,jk} &= \frac{1}{2h^2}\left(\Theta_0^1(j)\Theta_0^m(k)K^{(h)}_{j,k+\frac{1}{2}} + \Theta_1^{m}(j)\Theta_0^m(k)K^{(h)}_{j,k+\frac{1}{2}}+\Theta_0^m(j)\Theta_0^{m-1}(k)K^{(h)}_{j+\frac{1}{2},k+1}\right)\\
     (D_{j+1,k+1})_{jk,jk} &= \frac{1}{2h^2}\left(\Theta_0^{m-1}(j)\Theta_0^m(k)K^{(h)}_{j+1,k+\frac{1}{2}}+\Theta_0^m(j)\Theta_0^{m-1}(k)K^{(h)}_{j+\frac{1}{2},k+1}\right)\\
     (D_{j,k})_{jk,j-1,k} = (D_{j,k+1})_{jk,j-1,k} &= -\frac{1}{2h^2}\Theta_1^m(j)\Theta_0^m(k)K^{(h)}_{j,k+\frac{1}{2}} \\
     (D_{j+1,k})_{jk,j+1,k} = (D_{j+1,k+1})_{jk,j+1,k} &= -\frac{1}{2h^2}\Theta_0^{m-1}(j)\Theta_0^m(k)K^{(h)}_{j+1,k+\frac{1}{2}}\\
@@ -385,10 +385,11 @@ For each index pair $(r,s)$ we have
      &\quad - F^{(x)}_{r,s+1}\left(w_{r,s}u_{r,s}+w_{r-1,s}u_{r-1,s}-w_{r,s}u_{r-1,s}-w_{r-1,s}u_{r,s}\right)\\
      &\quad- F^{(y)}_{r,s}\left(w_{r-1,s}u_{r-1,s}+w_{r-1,s-1}u_{r-1,s-1}-w_{r-1,s}u_{r-1,s-1}-w_{r-1,s-1}u_{r-1,s}\right)\\
      &\quad - F^{(y)}_{r+1,s}\left(w_{r,s}u_{r,s}+w_{r,s-1}u_{r,s-1}-w_{r,s}u_{r,s-1}-w_{r,s-1}u_{r,s}\right)\\
-    &\quad - 2F^{(y,0)}_{r,s}w_{r,s}u_{r,s}
+    &\quad - 2F^{(y,0)}_{r,s}w_{r,s-1}u_{r,s-1}\\
+    &\quad - 2F^{(y,0)}_{r,s+1}w_{r,s}u_{r,s}
     \end{aligned}\label{eqn:gradient_expansion_2d}
 \end{equation}
-The coefficients $F^{(x)}_{r,s}$, $F^{(y)}_{r,s}$ and $F^{(0)}_{r,s}$ that appear in \eqref{eqn:gradient_expansion_2d} are
+The coefficients $F^{(x)}_{r,s}$, $F^{(y)}_{r,s}$ and $F^{(y,0)}_{r,s}$ that appear in \eqref{eqn:gradient_expansion_2d} are
 \begin{equation}
     \begin{aligned}
         F^{(x)}_{r,s} &:= \frac{1}{2h^2}\Theta_1^{m}(r)\Theta_1^{m+1}(s)K^{(h)}_{r,s-\frac{1}{2}}=\begin{cases}
@@ -400,8 +401,8 @@ The coefficients $F^{(x)}_{r,s}$, $F^{(y)}_{r,s}$ and $F^{(0)}_{r,s}$ that appea
             \frac{1}{2h^2}K^{(h)}_{r-\frac{1}{2},s} & \text{for $1\le r\le m$, $1\le s\le m-1$}\\
             0 & \text{otherwise}
         \end{cases}\\
-        F^{(y,0)}_{r,s} &:= \frac{1}{2h^2}\Theta_0^1(r)\Theta_0^m(s)K^{(h)}_{r,s+\frac{1}{2}}=\begin{cases}
-            \frac{1}{2h^2}K^{(h)}_{r,s+\frac{1}{2}} & \text{for $r=0$, $0\le s\le m-1$}\\
+        F^{(y,0)}_{r,s} &:= \frac{1}{2h^2}\Theta_0^1(r)\Theta_1^{m+1}(s)K^{(h)}_{r,s-\frac{1}{2}}=\begin{cases}
+            \frac{1}{2h^2}K^{(h)}_{r,s-\frac{1}{2}} & \text{for $r=0$, $1\le s\le m$}\\
             0 & \text{otherwise}
         \end{cases}
     \end{aligned}
