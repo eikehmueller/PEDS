@@ -123,6 +123,50 @@ class Solver2d:
             u[:, :] = np.asarray(v[:]).reshape((self._m, self._m))
         return u
 
+    def apply_operator(self, alpha, u):
+        """Apply discretised operator
+
+        :arg alpha: diffusion tensor, stored as a 2d tensor of shape (m+1,m+1)
+        :arg u: field to which the operator is applied, stored as a 2d tensor of shape (m,m)
+        """
+        v = np.zeros_like(u)
+        for j in range(self._m):
+            for k in range(self._m):
+                # left flux
+                K_left = np.exp(0.5 * (alpha[j, k] + alpha[j, k + 1]))
+                # right flux
+                if j < self._m - 1:
+                    K_right = np.exp(0.5 * (alpha[j + 1, k] + alpha[j + 1, k + 1]))
+                else:
+                    K_right = 0
+                # bottom flux
+                if k > 0:
+                    K_bottom = np.exp(0.5 * (alpha[j, k] + alpha[j + 1, k]))
+                else:
+                    K_bottom = 0
+                # top flux
+                if k < self._m - 1:
+                    K_top = np.exp(0.5 * (alpha[j, k + 1] + alpha[j + 1, k + 1]))
+                else:
+                    K_top = 0
+                # diagonal value
+                v[j, k] += self._hinv2 * (K_left + K_right + K_bottom + K_top) * u[j, k]
+                if j == 0:
+                    v[j, k] += self._hinv2 * K_left * u[j, k]
+                # left coupling
+                if j > 0:
+                    v[j, k] -= self._hinv2 * K_left * u[j - 1, k]
+                # right coupling
+                if j < self._m - 1:
+                    v[j, k] -= self._hinv2 * K_right * u[j + 1, k]
+                # bottom coupling
+                if k > 0:
+                    v[j, k] -= self._hinv2 * K_bottom * u[j, k - 1]
+                # top coupling
+                if k < self._m - 1:
+                    v[j, k] -= self._hinv2 * K_top * u[j, k + 1]
+        return v
+
 
 class DiffusionModel2dOperator(torch.autograd.Function):
     """Differentiable function which solves the diffusion equation
