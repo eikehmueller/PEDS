@@ -242,14 +242,15 @@ class DiffusionModel2dOperator(torch.autograd.Function):
                     )
                     grad_input[..., r, s] -= F_y * z_y
                     grad_input[..., r - 1, s] -= F_y * z_y
-                if (r == 0) and (s <= m - 1):
+                if (r == 0) and (1 <= s) and (s <= m):
                     F_y0 = (
                         0.5
                         * h_inv2
-                        * torch.exp(0.5 * (alpha[..., r, s] + alpha[..., r, s + 1]))
+                        * torch.exp(0.5 * (alpha[..., r, s - 1] + alpha[..., r, s]))
                     )
-                    z_y = w[..., r, s] * u[..., r, s]
+                    z_y = w[..., r, s - 1] * u[..., r, s - 1]
                     grad_input[..., r, s] -= 2 * F_y0 * z_y
+                    grad_input[..., r, s - 1] -= 2 * F_y0 * z_y
         return None, grad_input
 
 
