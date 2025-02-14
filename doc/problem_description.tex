@@ -431,7 +431,7 @@ Here we only consider the two cases $a=1$, $\nu=\frac{1}{2}$ and $a=2$, $\nu=\fr
         C_{\nu=\frac{3}{2},\kappa}(\kappa|x-y|) &= \frac{1}{4\kappa^3}\left(1+\kappa|x-y|\right)\exp[-\kappa|x-y|].
 \end{aligned}
 \end{equation}
-For the finite domain $\Omega=[0,1]$ we need to impose boundary conditions which we choose to be $\frac{d\alpha}{dx}(0)=\frac{d\alpha}{dx}(1)=0$. To generate samples of $\alpha(x)$ in practice, we divide the domain into $N$ cells as above and sample the vector $\alpha^{(h)}=(\alpha(x_0),\alpha(x_1),\dots,\alpha(x_N))\in\mathbb{R}^{\widetilde{N}}$ at the vertices $x_j$. A finite difference discretisation of the shifted Laplace operator $-\Delta + \kappa^2$ is given by the tridiagonal matrix
+For the finite domain $\Omega=[0,1]$ we need to impose boundary conditions which we choose to be $\frac{d\alpha}{dx}(0)=\frac{d\alpha}{dx}(1)=0$. To generate samples of $\alpha(x)$ in practice, we divide the domain into $n$ cells as above and sample the vector $\alpha^{(h)}=(\alpha(x_0),\alpha(x_1),\dots,\alpha(x_n))\in\mathbb{R}^{n+1}$ at the vertices $x_j$. A finite difference discretisation of the shifted Laplace operator $-\Delta + \kappa^2$ is given by the tridiagonal matrix
 \begin{equation}
     Q^{(h)} = \frac{1}{h^2}\begin{pmatrix}
         2 +\kappa^2h^2 & -1 & 0 & 0 & 0&\cdots & 0\\
@@ -444,7 +444,7 @@ For the finite domain $\Omega=[0,1]$ we need to impose boundary conditions which
             0 & 0 & 0 & \cdots &0 &  -1  & 2+\kappa^2h^2
     \end{pmatrix}.
 \end{equation}
-Let $\xi^{(h)}=(\xi_0,\xi_1,\dots,\xi_N)\in\mathbb{R}^{\widetilde{N}}$ be a vector of independent and identically distributed (i.i.d.) Gaussian random variables $\xi_j\sim\mathcal{N}(0,h^{-1})$ for $j=0,1,\dots,N$; we also write $\xi^{(h)}\sim \pi_0^{(h)}$. For $a=1$, $\nu=\frac{3}{2}$ we can generate a sample $\alpha^{(h)k}$ from the target distribution $\pi^{(h)}(\cdot|\nu,\kappa)$ by drawing $\xi^{(h)k}\sim \pi_0^{(h)}$ and solving the tridiagonal system $Q^{(h)}\alpha^{(h)k}=\xi^{(h)k}$ for $\alpha^{(h)k}$. For $a=1$, $\nu=\frac{1}{2}$ we Cholesky factorise $Q^{(h)}=L^{(h)}(L^{(h)})^\top$ and solve the bi-diagonal system $(L^{(h)})^\top\alpha^{(h)k}= \xi^{(h)k}$. Observe that the approach is readily extended to arbitrary integer $a>1$.
+Let $\xi^{(h)}=(\xi_0,\xi_1,\dots,\xi_n)\in\mathbb{R}^{n+1}$ be a vector of independent and identically distributed (i.i.d.) Gaussian random variables $\xi_j\sim\mathcal{N}(0,h^{-1})$ for $j=0,1,\dots,n$; we also write $\xi^{(h)}\sim \pi_0^{(h)}$. For $a=1$, $\nu=\frac{3}{2}$ we can generate a sample $\alpha^{(h)k}$ from the target distribution $\pi^{(h)}(\cdot|\nu,\kappa)$ by drawing $\xi^{(h)k}\sim \pi_0^{(h)}$ and solving the tridiagonal system $Q^{(h)}\alpha^{(h)k}=\xi^{(h)k}$ for $\alpha^{(h)k}$. For $a=1$, $\nu=\frac{1}{2}$ we Cholesky factorise $Q^{(h)}=L^{(h)}(L^{(h)})^\top$ and solve the bi-diagonal system $(L^{(h)})^\top\alpha^{(h)k}= \xi^{(h)k}$. Observe that the approach is readily extended to arbitrary integer $a>1$.
 \begin{figure}
     \begin{center}
         \includegraphics[width=0.45\linewidth]{figures/samples_nu0_5.pdf}
@@ -465,6 +465,14 @@ Fig.~\ref{fig:random_samples} showns some random samples generates in this way f
     \label{fig:lognormal_covariance}
 \end{figure}
 The corresponding covariance between $a$ and $y=\frac{3}{4}$ is visualised in Fig.~\ref{fig:lognormal_covariance} where we show both an estimator for the covariance on the interval $\Omega=[0,1]$ and the Matern covariance function. The two functins differ since von Neumann boundary conditions have been imposed to generate the samples.
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Two-dimensional case}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+In $d=2$ dimensions we only consider the case $a=2$ which, since $a=\nu+\frac{d}{2}$, corresponds to $\nu=1$. The Matern function is
+\begin{equation}
+    C_{\nu=1,\kappa}(\kappa||x-y||) = \frac{1}{4\pi\kappa} ||x-y|| K_1(\kappa||x-y||)
+\end{equation}
+To draw samples from the distribution, we start by generating a vector $\xi^{(h)}=(\xi_0,\dots,\xi_{(n+1)^2-1})\in\mathbb{R}^{(n+1)^2}$ where $\xi_j\sim\mathcal{N}(0,h^{-1})$. Next, we solve the system $Q^{(h)}\alpha^{(h)}=\xi^{(h)}$ where $Q^{(h)}$ is a finite difference discretisation of the shifted Laplace operator $-\Delta+\kappa^2$ with homogeneous von Neumann boundary conditions.
 \bibliographystyle{unsrt}
 \bibliography{problem_description}
 \end{document}
