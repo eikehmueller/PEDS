@@ -3,6 +3,38 @@ from tqdm import tqdm
 import numpy as np
 from matplotlib import pyplot as plt
 from peds.distributions import matern, LogNormalDistribution2d
+from firedrake import *
+
+
+def save_vtk(alpha_samples, filename):
+    """Save a list of samples to vtk file
+
+    :arg alpha_samples: list of fields
+    :arg filename: name of file to write to
+    """
+    alpha = alpha_samples[0]
+    nx = alpha.shape[0] - 1
+    ny = alpha.shape[1] - 1
+    npoints = (nx + 1) * (ny + 1)
+    hx = 1.0 / nx
+    hy = 1.0 / ny
+    with open(filename, "w", encoding="utf8") as f:
+        print("# vtk DataFile Version 2.0", file=f)
+        print("Sample state", file=f)
+        print("ASCII", file=f)
+        print("DATASET STRUCTURED_POINTS", file=f)
+        print(f"DIMENSIONS {nx + 1} {ny + 1} 1 ", file=f)
+        print("ORIGIN -0.5 -0.5 0.0", file=f)
+        print(f"SPACING {hx} {hy} 0", file=f)
+        print(file=f)
+        print(f"POINT_DATA {npoints}", file=f)
+        for ell, alpha in enumerate(alpha_samples):
+            print(f"SCALARS sample_{ell:03d} double 1", file=f)
+            print("LOOKUP_TABLE default", file=f)
+            for j in range(nx + 1):
+                for k in range(nx + 1):
+                    print(f"{alpha[j,k]:12.8e}", file=f)
+
 
 n = 64
 Lambda = 0.1  # correlation length
@@ -34,7 +66,12 @@ for j in range(n + 1):
         bin_idx = int(np.floor(nbins * d / dmax))
         bin_volume[bin_idx] += 1
 
-for alpha in tqdm(itertools.islice(iter(distribution), n_samples), total=n_samples):
+alpha_samples = []
+for ell, alpha in enumerate(
+    tqdm(itertools.islice(iter(distribution), n_samples), total=n_samples)
+):
+    if ell < 16:
+        alpha_samples.append(alpha)
     for j in range(n + 1):
         for k in range(n + 1):
             d = np.sqrt((j - j0) ** 2 + (k - k0) ** 2) / n
@@ -43,6 +80,7 @@ for alpha in tqdm(itertools.islice(iter(distribution), n_samples), total=n_sampl
                 alpha[j0, k0] * alpha[j, k] / (n_samples * bin_volume[bin_idx])
             )
     cov[0] += alpha[j0, k0] ** 2 / n_samples
+save_vtk(alpha_samples, "samples.vtk")
 print(f"variance = {cov[0]}")
 plt.clf()
 X = (np.arange(nbins + 1) - 0.5) / nbins * dmax
