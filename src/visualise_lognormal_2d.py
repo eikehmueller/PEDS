@@ -101,5 +101,5 @@ plt.plot(
 )
 plt.legend(loc="upper right")
 ax = plt.gca()
-ax.set_xlabel("x")
+ax.set_xlabel("$||x-x_0||$")
 plt.savefig("covariance_2d.pdf", bbox_inches="tight")
