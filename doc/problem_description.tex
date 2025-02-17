@@ -17,22 +17,31 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Problem specification}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-Consider the unit interval $\Omega=[0,1]$. Let the function $f:\Omega\rightarrow \mathbb{R}$ be fixed. For a given function $\alpha:\Omega\rightarrow \mathbb{R}$, we want to find the function $u:\Omega\rightarrow\mathbb{R}$ which satisfies
+Consider the domain $\Omega\subset \mathbb{R}^{d}$ where $d=1,2$. Let the function $f:\Omega\rightarrow \mathbb{R}$ be fixed. For a given function $\alpha:\Omega\rightarrow \mathbb{R}$, we want to find the function $u:\Omega\rightarrow\mathbb{R}$ which satisfies
+\begin{equation}
+        -\nabla\left(\exp[\alpha(x)]\nabla u(x)\right) = f(x)\qquad\text{for all $x\in \Omega$}
+        \label{eqn:PDE}
+\end{equation}
+subject to suitable boundary conditions on $\partial\Omega$.
+In a more abstract sense, let $V$ be the space of real-valued functions defined on $\Omega$. We want to find the map $\mathcal{F} : V\rightarrow V$ with $\mathcal{F}:\alpha \mapsto u(\alpha)$ where $u=u(\alpha)$ is defined by \eqref{eqn:PDE} together with the boundary conditions on $u$.
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{One dimensional problem}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+Let $\Omega=[0,1]$ be the unit interval. In $d=1$ dimension \eqref{eqn:PDE} becomes
 \begin{equation}
     -\frac{d}{dx}\left(\exp[\alpha(x)]\frac{du}{dx}(x)\right) = f(x)\qquad\text{for all $0<x<1$}
-    \label{eqn:PDE}
+    \label{eqn:PDE_1d}
 \end{equation}
-subject to the boundary conditions 
+and we choose the boundary conditions 
 \begin{equation}
     \begin{aligned}
     u(x=0) &=0 \qquad{\text{(homogeneous Dirichlet)}}\\
     \frac{du}{dx}(x=1) &=-g\exp[-\alpha(1)] \qquad{\text{(von Neumann)}}
     \end{aligned}
-    \label{eqn:boundary_condition}
+    \label{eqn:boundary_condition_1d}
 \end{equation}
-In a more abstract sense, let $V$ be the space of real-valued functions defined on $\Omega$. We want to find the map $\mathcal{F} : V\rightarrow V$ with $\mathcal{F}:\alpha \mapsto u(\alpha)$ where $u=u(\alpha)$ is defined by \eqref{eqn:PDE} and \eqref{eqn:boundary_condition}.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\paragraph{Higher dimensions}
+\subsection{Two-dimensional problem}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 The problem can be extended to two dimensions by considering the domain $\Omega=[0,1]\times[0,1]$ and seeking $u(x)$ such that
 \begin{equation}
@@ -49,9 +58,8 @@ subject to the boundary conditions
     \end{aligned}
     \label{eqn:boundary_condition_2d}
 \end{equation}
-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\paragraph{Physical interpretation}
+\subsection{Physical interpretation}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 Note that by setting $K(x):=\exp[\alpha(x)]$, \eqref{eqn:PDE} can be written as $-\nabla\cdot (K\nabla u)=f$. So physically the problem is about finding the solution of the diffusion equation for a given spatially varying diffusion coefficient $K(x)>0$ which is parametrised by its logarithm $\alpha(x)$.
 
@@ -63,7 +71,7 @@ where $K$ is the spatially varying thermal conductivity. If $f$ describes the so
 \begin{equation}
     \nabla \cdot \phi = f.
 \end{equation}
-The boundary conditions in \eqref{eqn:boundary_condition} correspond to fixing the temperature at $x=0$ and fixing the heat flux at $x=1$.
+Dirichlet boundary conditions correspond to fixing the temperature whereas von Neumann boundary conditions correspond to fixing the heat flux.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsection{Quantity of interest}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -95,13 +103,13 @@ Note that $\mathcal{Q}$ is linear in the first two cases but non-linear in the l
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsection{One-dimensional problem}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-Let $\Omega = [0,1]$ be the unit interval. Split $\Omega$ into $n$ sub-intervals of size $h=1/n$ to obtain a grid \mbox{$\Omega_h := \bigcup_{j=0}^{n-1} I_j^{(h)}$} where $I_j^{(h)}=[jh,(j+1)h]=[x^{(h)}_j,x^{(h)}_{j+1}]$ for $j=0,1,\dots,n-1$ is the $j$-th sub-interval or cell of the grid. We call the points $x^{(h)}_j=jh$ for $j=0,1,\dots,n$ the vertices of the grid.
+Let $\Omega = [0,1]$ be the unit interval. Split $\Omega$ into $n=m$ sub-intervals of size $h=1/m$ to obtain a grid \mbox{$\Omega_h := \bigcup_{j=0}^{m-1} I_j^{(h)}$} where $I_j^{(h)}=[jh,(j+1)h]=[x^{(h)}_j,x^{(h)}_{j+1}]$ for $j=0,1,\dots,n-1$ is the $j$-th sub-interval or cell of the grid. We call the points $x^{(h)}_j=jh$ for $j=0,1,\dots,m$ the vertices of the grid.
 
-Let $\alpha^{(h)}\in\mathbb{R}^{\widetilde{n}}$ with $\widetilde{n}=n+1$ be the vector with $\alpha^{(h)}_j\approx \alpha(x^{(h)}_j)$ for $j=0,1,\dots,n$ and $u^{(h)}\in\mathbb{R}^{n}$ be the vector with
+Let $\alpha^{(h)}\in\mathbb{R}^{\widetilde{n}}$ with $\widetilde{n}=m+1$ be the vector with $\alpha^{(h)}_j\approx \alpha(x^{(h)}_j)$ for $j=0,1,\dots,m$ and $u^{(h)}\in\mathbb{R}^{n}$ be the vector with
 \begin{equation}
-    u^{(h)}_j\approx \frac{1}{h}\int_{I^{(h)}_j} u(x)\; dx\qquad\text{for $j=0,1,\dots,n-1$},\label{eqn:vol_avg}
+    u^{(h)}_j\approx \frac{1}{h}\int_{I^{(h)}_j} u(x)\; dx\qquad\text{for $j=0,1,\dots,m-1$},\label{eqn:vol_avg}
 \end{equation}
-with an analogous definition of the vector $f^{(h)}\in \mathbb{R}^n$. The definition in \eqref{eqn:vol_avg} says that the components of the vector $u^{(h)}$ approximate the volume averages of the solution in the grid cells. To discretise \eqref{eqn:PDE} with the finite volume method, integrate the equation over cell $I_j^{(h)}$ and use the boundary conditions in \eqref{eqn:boundary_condition}:
+with an analogous definition of the vector $f^{(h)}\in \mathbb{R}^n$. The definition in \eqref{eqn:vol_avg} says that the components of the vector $u^{(h)}$ approximate the volume averages of the solution in the grid cells. To discretise \eqref{eqn:PDE} with the finite volume method, integrate the equation over cell $I_j^{(h)}$ and use the boundary conditions in \eqref{eqn:boundary_condition_1d}:
 \begin{equation}
     \begin{aligned}
        hf^{(h)}_j :=\int_{I^{(h)}_j} f(x)\;dx&=
@@ -109,16 +117,16 @@ with an analogous definition of the vector $f^{(h)}\in \mathbb{R}^n$. The defini
     &=\exp[\alpha(x^{(h)}_{j})]\frac{du}{dx}(x^{(h)}_{j})-\exp[\alpha(x^{(h)}_{j+1})]\frac{du}{dx}(x^{(h)}_{j+1})\\
     &\approx \begin{cases}
         \exp[\alpha^{(h)}_{j}]\frac{2u^{(h)}_j}{h}-\exp[\alpha^{(h)}_{j+1}]\frac{u^{(h)}_{j+1}-u^{(h)}_j}{h}&\text{for $j=0$}\\
-        \exp[\alpha^{(h)}_{j}]\frac{u^{(h)}_j-u^{(h)}_{j-1}}{h}-\exp[\alpha^{(h)}_{j+1}]\frac{u^{(h)}_{j+1}-u^{(h)}_j}{h}&\text{for $0<j<n-1$}\\ 
-        \exp[\alpha^{(h)}_{j}]\frac{u^{(h)}_j-u^{(h)}_{j-1}}{h}+g&\text{for $j=n-1$}
+        \exp[\alpha^{(h)}_{j}]\frac{u^{(h)}_j-u^{(h)}_{j-1}}{h}-\exp[\alpha^{(h)}_{j+1}]\frac{u^{(h)}_{j+1}-u^{(h)}_j}{h}&\text{for $0<j<m-1$}\\ 
+        \exp[\alpha^{(h)}_{j}]\frac{u^{(h)}_j-u^{(h)}_{j-1}}{h}+g&\text{for $j=m-1$}
     \end{cases}
     \end{aligned}  
 \end{equation}
 This results in the following linear system:
 \begin{equation}
-A^{(h)} u^{(h)} = \widetilde{f}^{(h)} := f^{(h)}-\frac{1}{h}\widehat{g}^{(h)} \label{eqn:discrete_system}
+A^{(h)} u^{(h)} = \widetilde{f}^{(h)} := f^{(h)}-\frac{1}{h}\widehat{g}^{(h)} \label{eqn:discrete_system_1d}
 \end{equation}
-where $\widehat{g}^{(h)}=(0,0,\dots,0,g)\in\mathbb{R}^{n}$ is the vector which is zero everywhere except for its final entry. The matrix $A^{(h)} = A^{(h)}(\alpha^{(h)})$ is given by
+where $\widehat{g}^{(h)}=(0,0,\dots,0,g)\in\mathbb{R}^{n}$ is the vector which is zero everywhere except for its final entry. The $n\times n$ matrix $A^{(h)} = A^{(h)}(\alpha^{(h)})$ is given by
 \begin{equation}
     A^{(h)}(\alpha^{(h)}) =
     \begin{aligned}\frac{1}{h^2}
@@ -143,17 +151,6 @@ Note that by solving \eqref{eqn:discrete_system} for $u^{(h)}$ for a given $\alp
     \mathcal{F}_h : \mathbb{R}^{\widetilde{n}} &\rightarrow \mathbb{R}^n,&
     \alpha^{(h)}&\mapsto u^{(h)} = u^{(h)}(\alpha^{(h)})=\;\text{the solution of \eqref{eqn:discrete_system} for given $\alpha^{(h)}$.}\label{eqn:solution_map}
 \end{xalignat}
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\paragraph{Quantity of Interest.}
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-We also need to construct an approximation $Q^{(h)}$ of the QoI in \eqref{eqn:QoI}. For example, if the QoI is the average field, then $Q^{(h)}:\mathbb{R}^n\rightarrow \mathbb{R}$ is defined by
-\begin{equation}
-    Q^{(h)}(u^{(h)}) = \frac{1}{n}\sum_{j=0}^{n-1}u^{(h)}_j.
-\end{equation}
-If the QoI is the field sampled at some locations $\xi_1,\xi_2,\dots,\xi_q$, then $Q^{(h)}:\mathbb{R}^n\rightarrow \mathbb{R}^\beta$ is defined by
-\begin{equation}
-    Q^{(h)}(u^{(h)}) = \left(u^{(h)}_{j_1},u^{(h)}_{j_2},\dots,u^{(h)}_{j_\beta}\right) \qquad\text{with $\xi_k\in I_{j_k}^{(h)}$ for $k =1,2,\dots,\beta$.}
-\end{equation}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsection{Two-dimensional problem}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -200,9 +197,9 @@ where we defined the diffusion coefficients
     \end{xalignat}
 and set
 \begin{xalignat}{3}
-    g_k^{(\text{right})} &:= g^{(\text{right})}(x^{(h)}_{k+\frac{1}{2}}), &
-    g_j^{(\text{bottom})} &:= g^{(\text{bottom})}(x^{(h)}_{j+\frac{1}{2}}), &
-    g_j^{(\text{top})} &:= g^{(\text{top})}(x^{(h)}_{j+\frac{1}{2}}).
+    g_k^{(\text{right})} &:= \int_{x^{(h)}_k}^{x^{(h)}_{k+1}} g^{(\text{right})}(x_1)\;dx_1, &
+    g_j^{(\text{bottom})} &:= \int_{x^{(h)}_j}^{x^{(h)}_{j+1}} g^{(\text{bottom})}(x_0)\;dx_0, &
+    g_j^{(\text{top})} &:= \int_{x^{(h)}_j}^{x^{(h)}_{j+1}} g^{(\text{top})}(x_0)\;dx_0.
     \end{xalignat}
 Let $\nu:[0,1,\dots,m-1]\times[0,1,\dots,m-1] \rightarrow [0,1,\dots,n-1]$ be the function which maps the tuple $j,k$ to a linear index with $\nu(j,k):=jm + k$. With this, we get the linear system
 \begin{equation}
@@ -234,6 +231,23 @@ The non-zero entries of the vector $\widehat{g}^{(h)}\in\mathbb{R}^n$ are given 
 \end{xalignat}
 Again, by solving \eqref{eqn:discrete_system_2d} we can construct a solution map $\mathcal{F}(\alpha^{(h)})=u^{(h)}$ as in \eqref{eqn:solution_map}.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Quantity of Interest.}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+We also need to construct an approximation $Q^{(h)}$ of the QoI in \eqref{eqn:QoI}. For example, if the QoI is the average field, then $Q^{(h)}:\mathbb{R}^n\rightarrow \mathbb{R}$ is defined by
+\begin{equation}
+    Q^{(h)}(u^{(h)}) = \begin{cases}
+        \frac{1}{m}\sum_{j=0}^{m-1}u^{(h)}_j & \text{in $d=1$ dimensions}\\[1ex]
+        \frac{1}{m^2}\sum_{j=0}^{m-1}\sum_{k=0}^{m-1}u^{(h)}_{jk} & \text{in $d=2$ dimensions.}
+    \end{cases}
+\end{equation}
+If the QoI is the field sampled at some locations $\xi_1,\xi_2,\dots,\xi_\beta$, then $Q^{(h)}:\mathbb{R}^n\rightarrow \mathbb{R}^\beta$ is defined by
+\begin{equation}
+    Q^{(h)}(u^{(h)}) = \begin{cases}
+        \left(u^{(h)}_{j_1},u^{(h)}_{j_2},\dots,u^{(h)}_{j_\beta}\right) \qquad\text{with $\xi_t\in I_{j_t}^{(h)}$ for $t =1,2,\dots,\beta$.} & \text{in $d=1$ dimensions}\\[1ex]
+        \left(u^{(h)}_{j_1,k_1},u^{(h)}_{j_2,k_2},\dots,u^{(h)}_{j_\beta,k_\beta}\right) \qquad\text{with $\xi_t\in I_{j_t,k_t}^{(h)}$ for $t =1,2,\dots,\beta$.} & \text{in $d=2$ dimensions.}
+    \end{cases}
+\end{equation}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Solution procedure}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -241,15 +255,15 @@ Again, by solving \eqref{eqn:discrete_system_2d} we can construct a solution map
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{enumerate}
 \item Given $\alpha^{(h)}\in\mathbb{R}^{\widetilde{n}}$, compute $A^{(h)}=A^{(h)}(\alpha^{(h)})$.
-\item Solve the linear system in \eqref{eqn:discrete_system} to obtain $u^{(h)}=u^{(h)}(\alpha^{(h)})\in\mathbb{R}^n$.
+\item Solve the linear system in \eqref{eqn:discrete_system_1d} or \eqref{eqn:discrete_system_2d} to obtain $u^{(h)}=u^{(h)}(\alpha^{(h)})\in\mathbb{R}^n$.
 \item Compute the quantity of interest $q^{(h)} = q^{(h)}(\alpha^{(h)})= Q^{(h)}(u^{(h)}(\alpha^{(h)}))\in\mathbb{R}^\beta$
 \end{enumerate}
-This method can be made very accurate by choosing $h\ll1$, but it also becomes very expensive in this case. The computational bottleneck is the solution of  \eqref{eqn:discrete_system}.
+This method can be made very accurate by choosing $h\ll1$, but it also becomes very expensive in this case. The computational bottleneck is the solution of the linear system $A^{(h)} u^{(h)} = \widetilde{f}^{(h)}$ in \eqref{eqn:discrete_system_1d} or \eqref{eqn:discrete_system_2d}.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsection{Pure ML solution}\label{sec:pure_ml}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{enumerate}
-    \item Generate a training data set $\{(\alpha^{(h)\ell},q^{(h)\ell})\}_{\ell=1}^{N_{\text{samples}}}$ where for each pair $(\alpha^{(h)\ell},q^{(h)\ell})$ we have that $q^{(h)\ell}=Q^{(h)}(u^{(h)\ell})$ and $u^{(h)\ell}$ satisfies \eqref{eqn:discrete_system}, i.e. 
+    \item Generate a training data set $\{(\alpha^{(h)\ell},q^{(h)\ell})\}_{\ell=1}^{N_{\text{samples}}}$ where for each pair $(\alpha^{(h)\ell},q^{(h)\ell})$ we have that $q^{(h)\ell}=Q^{(h)}(u^{(h)\ell})$ and $u^{(h)\ell}$ satisfies \eqref{eqn:discrete_system_1d} or \eqref{eqn:discrete_system_2d}, i.e. 
     \begin{equation}
         A^{(h)}(\alpha^{(h)\ell})u^{(h)\ell}=\widetilde{f}^{(h)}
         \qquad\text{for $\ell=1,2,\dots,N_{\text{samples}}$.}
@@ -279,15 +293,18 @@ The problem with this approach is that the neural network is a black box.
 The following approach is described in \cite{pestourie2023physics}:
 \begin{enumerate}
     \item Generate a training data set $\{(\alpha^{(h)\ell},q^{(h)\ell})\}_{\ell=1}^{N_{\text{samples}}}$ as in Step 1 of the Pure ML approach in Section \ref{sec:pure_ml}.
-    \item Construct a second grid $\Omega_H$ with grid spacing $H=1/N$ consisting of $N<n$ cells. We usually want to choose $H\gg h$.
+    \item Construct a second grid $\Omega_H$ with grid spacing $H=1/M$ consisting of $N<n$ cells; in $d=1$ we have that $n=m$, $N=M$ whereas in $d=2$ this becomes $n=m^2$, $N=M^2$. We usually want to choose $H\gg h$.
     \item Define the downsampling operator
     \begin{xalignat}{2}
         R:\mathbb{R}^{\widetilde{n}}&\rightarrow \mathbb{R}^{\widetilde{N}},&
         \alpha^{(h)}&\mapsto \alpha^{(H)}_{\text{DS}}
     \end{xalignat}
-    which takes a high-resolution $\alpha^{(h)}$ and turns it into a low-fidelity downsampled $\alpha^{(H)}_{\text{DS}}$. If $H=\mu h$ where the scale parameter $\mu=H/h=n/N\in\mathbb{N}$ is an integer, then we can for example simply set
+    which takes a high-resolution $\alpha^{(h)}$ and turns it into a low-fidelity downsampled $\alpha^{(H)}_{\text{DS}}$. If $H=\mu h$ where the scale parameter $\mu=H/h=m/M\in\mathbb{N}$ is an integer, then we can for example simply set
     \begin{equation}
-        (\alpha^{(H)}_{\text{DS}})_j = \alpha^{(h)}_{\mu\cdot j}\qquad\text{for $j=0,1,\dots,N$}.
+        \begin{aligned}
+        (\alpha^{(H)}_{\text{DS}})_j &= \alpha^{(h)}_{\mu\cdot j}\qquad\text{for $j=0,1,\dots,M$}\quad\text{in $d=1$ dimensons,}\\
+        (\alpha^{(H)}_{\text{DS}})_{j,k} &= \alpha^{(h)}_{\mu\cdot j,\mu\cdot k}\qquad\text{for $j,k=0,1,\dots,M$}\quad\text{in $d=2$ dimensons.}
+        \end{aligned}
     \end{equation}
     \item Construct a neural network $\Psi_{\text{NN}}$ parametrised by some parameters $\theta$ (which have nothing to do with the NN parameters in Section \ref{sec:pure_ml})
     \begin{equation}
@@ -296,12 +313,13 @@ The following approach is described in \cite{pestourie2023physics}:
     $\Psi_{\text{NN}}$ maps $\alpha^{(h)}$ to some generated $\alpha_{\text{NN}}^{(H)}$ on the low-resolution grid.
     \item Define some function $A:\mathbb{R}^{\widetilde{N}}\times \mathbb{R}^{\widetilde{N}}\times [0,1]\rightarrow \mathbb{R}^{\widetilde{N}}$ for combining the downsampled $\alpha^{(H)}_{\text{DS}}$ and the generated $\alpha^{(H)}_{\text{NN}}$ into some $\alpha^{(H)}=A(\alpha^{(H)}_{\text{DS}},\alpha^{(H)}_{\text{NN}},w)$ where $w$ is a learnable parameter. For example, one might choose one of the following two weighted means
     \begin{equation}
-        \alpha^{(H)}_j = w (\alpha^{(H)}_{\text{NN}})_j + (1-w) (\alpha^{(H)}_{\text{DS}})_j \qquad\text{for $j=0,1,\dots,N$}
+        \alpha^{(H)}_j = w (\alpha^{(H)}_{\text{NN}})_j + (1-w) (\alpha^{(H)}_{\text{DS}})_j \qquad\text{for $j=0,1,\dots,M$}
     \end{equation}
     or
     \begin{equation}
-        \alpha^{(H)}_j = \log\left(w \exp[(\alpha^{(H)}_{\text{NN}})_j] + (1-w) \exp[(\alpha^{(H)}_{\text{DS}})_j]\right) \qquad\text{for $j=0,1,\dots,N$}
+        \alpha^{(H)}_j = \log\left(w \exp[(\alpha^{(H)}_{\text{NN}})_j] + (1-w) \exp[(\alpha^{(H)}_{\text{DS}})_j]\right) \qquad\text{for $j=0,1,\dots,M$}
     \end{equation}
+    in $d=1$ dimensions with the obvious corresponding expressions in $d=2$ dimensions.
     \item For given neural network parameters $\theta$ and weight $w$ define the function $\mathcal{F}^{(h)}_{\text{PEDS}}(\cdot|\theta,w):\mathbb{R}^{\widetilde{n}}\rightarrow \mathbb{R}^{\widetilde{N}}$. This function maps a high-resolution $\alpha^{(h)}$ to the low fidelity solution $u^{(H)}=u^{(H)}(\alpha^{(h)})$ as follows:
     \begin{itemize}
         \item Compute $\alpha^{(H)}_{\text{DS}}$ and $\alpha^{(H)}_{\text{NN}}$ and combine them into $\alpha^{(H)}$ as described above.
@@ -331,7 +349,11 @@ We need to back-propagate through the solution, i.e. the map $\alpha\mapsto u$ d
     \Leftrightarrow\qquad u &= A(\alpha)^{-1}\widetilde{f}
     \end{aligned}
 \end{equation}
-where for simplicity we have dropped all superscripts relating to the grid spacing $H$. The chain rule gives:
+where for simplicity we have dropped all superscripts relating to the grid spacing $H$.
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{One-dimensional problem}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+The chain rule gives:
 \begin{equation}
     \frac{\partial L}{\partial \alpha_i}=\sum_j\frac{\partial u_j}{\partial \alpha_i}\frac{\partial L}{\partial u_j}
 \end{equation}
@@ -361,7 +383,7 @@ In two dimensions we can write
 \begin{equation}
 \frac{\partial L}{\partial\alpha^{(h)}_{rs}} = -\sum_{j,k}\sum_{j',k'} w_{jk}(D_{rs}(\alpha^{(h)}))_{jk,j'k'} u_{j'k'}
 \end{equation}
-where again $u$ and $w$ are obtained by solving \eqref{eqn:transpose_solutions}. The sparse tensor $D(\alpha^{(h)})$ is given by
+where again $u$ and $w$ are obtained by solving the two-dimensional equivalent of \eqref{eqn:transpose_solutions}. The sparse tensor $D(\alpha^{(h)})$ is given by
 \begin{equation}
     (D_{rs}(\alpha^{(h)}))_{jk,j'k'} = \frac{A(\alpha^{(h)})_{\nu(j,k)\nu(j',k')}}{\partial \alpha^{(h)}_{r,s}}
 \end{equation}
