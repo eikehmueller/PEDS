@@ -9,6 +9,10 @@ from peds.distributions import LogNormalDistribution1d
 from peds.quantity_of_interest import QoISampling1d
 from peds.datasets import PEDSDataset, SavedDataset
 from peds.peds_model import PEDSModel
+from peds.interpolation_1d import (
+    VertexToVolumeInterpolator1d,
+    VolumeToVertexInterpolator1d,
+)
 
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 print(f"Running on device {device}")
@@ -71,7 +75,9 @@ physics_model_lowres = physics_model_highres.coarsen(scaling_factor)
 
 downsampler = torch.nn.Sequential(
     torch.nn.Unflatten(-1, (1, n + 1)),
+    VertexToVolumeInterpolator1d(),
     torch.nn.AvgPool1d(1, stride=scaling_factor),
+    VolumeToVertexInterpolator1d(),
     torch.nn.Flatten(-2, -1),
 )
 
