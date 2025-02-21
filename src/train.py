@@ -4,8 +4,8 @@ import tomllib
 import torch
 from torch.utils.tensorboard import SummaryWriter
 
-from peds.diffusion_model import DiffusionModel1d
 from peds.distributions import LogNormalDistribution1d
+from peds.diffusion_model_1d import DiffusionModel1d
 from peds.quantity_of_interest import QoISampling1d
 from peds.datasets import PEDSDataset, SavedDataset
 from peds.peds_model import PEDSModel

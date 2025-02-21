@@ -3,7 +3,7 @@ import torch
 import numpy as np
 from matplotlib import pyplot as plt
 
-from peds.diffusion_model import DiffusionModel1d
+from peds.diffusion_model_1d import DiffusionModel1d
 from peds.distributions import LogNormalDistribution1d
 
 torch.set_default_dtype(torch.float64)

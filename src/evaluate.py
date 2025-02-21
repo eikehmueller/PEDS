@@ -7,7 +7,7 @@ from torch.utils.tensorboard import SummaryWriter
 import numpy as np
 from matplotlib import pyplot as plt
 
-from peds.diffusion_model import DiffusionModel1d
+from peds.diffusion_model_1d import DiffusionModel1d
 from peds.distributions import LogNormalDistribution1d
 from peds.quantity_of_interest import QoISampling1d
 from peds.datasets import PEDSDataset, SavedDataset

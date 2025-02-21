@@ -2,7 +2,11 @@
 
 import torch
 import pytest
-from peds.diffusion_model import tridiagonal_apply, tridiagonal_solve, DiffusionModel1d
+from peds.diffusion_model_1d import (
+    tridiagonal_apply,
+    tridiagonal_solve,
+    DiffusionModel1d,
+)
 
 torch.set_default_dtype(torch.float64)
 
