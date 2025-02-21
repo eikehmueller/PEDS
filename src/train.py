@@ -4,14 +4,19 @@ import tomllib
 import torch
 from torch.utils.tensorboard import SummaryWriter
 
-from peds.distributions import LogNormalDistribution1d
 from peds.diffusion_model_1d import DiffusionModel1d
-from peds.quantity_of_interest import QoISampling1d
+from peds.diffusion_model_2d import DiffusionModel2d
+from peds.distributions import LogNormalDistribution1d, LogNormalDistribution2d
+from peds.quantity_of_interest import QoISampling1d, QoISampling2d
 from peds.datasets import PEDSDataset, SavedDataset
 from peds.peds_model import PEDSModel
 from peds.interpolation_1d import (
     VertexToVolumeInterpolator1d,
     VolumeToVertexInterpolator1d,
+)
+from peds.interpolation_2d import (
+    VertexToVolumeInterpolator2d,
+    VolumeToVertexInterpolator2d,
 )
 
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
@@ -29,7 +34,7 @@ with open(config_file, "r") as f:
         print(line.strip())
 print()
 
-use_peds = config["model"]["use_peds"] == "True"
+dim = config["model"]["dimension"]
 model_filename = config["model"]["filename"]
 n = config["discretisation"]["n"]
 scaling_factor = config["discretisation"]["scaling_factor"]
@@ -43,14 +48,73 @@ batch_size = config["train"]["batch_size"]
 n_epoch = config["train"]["n_epoch"]
 lr_initial = config["train"]["lr_initial"]
 lr_target = config["train"]["lr_final"]
-sample_points = config["qoi"]["sample_points"]
+sample_points_1d = config["qoi"]["sample_points_1d"]
+sample_points_2d = config["qoi"]["sample_points_2d"]
 n_lowres = n // scaling_factor
 
-f_rhs = torch.ones(size=(n,), dtype=torch.float)
+if dim == 1:
+    f_rhs = torch.ones(size=(n,), dtype=torch.float)
+    distribution = LogNormalDistribution1d(n, Lambda, a_power)
+    physics_model_highres = DiffusionModel1d(f_rhs)
+    qoi = QoISampling1d(sample_points_1d)
+    downsampler = torch.nn.Sequential(
+        torch.nn.Unflatten(-1, (1, n + 1)),
+        VertexToVolumeInterpolator1d(),
+        torch.nn.AvgPool1d(1, stride=scaling_factor),
+        VolumeToVertexInterpolator1d(),
+        torch.nn.Flatten(-2, -1),
+    )
+    nn_model = torch.nn.Sequential(
+        torch.nn.Unflatten(-1, (1, n + 1)),
+        VertexToVolumeInterpolator1d(),
+        torch.nn.Conv1d(1, 4, 3, padding=1),
+        torch.nn.ReLU(),
+        torch.nn.MaxPool1d(2, ceil_mode=True),
+        torch.nn.Conv1d(4, 4, 3, padding=1),
+        torch.nn.ReLU(),
+        torch.nn.MaxPool1d(2, ceil_mode=True),
+        torch.nn.Conv1d(4, 8, 3, padding=1),
+        torch.nn.ReLU(),
+        torch.nn.MaxPool1d(2, ceil_mode=True),
+        torch.nn.Conv1d(8, 8, 3, padding=1),
+        torch.nn.ReLU(),
+        torch.nn.Conv1d(8, 1, 3, padding=1),
+        VolumeToVertexInterpolator1d(),
+        torch.nn.Flatten(-2, -1),
+    )
+elif dim == 2:
+    f_rhs = torch.ones(size=(n, n), dtype=torch.float)
+    distribution = LogNormalDistribution2d(n, Lambda)
+    physics_model_highres = DiffusionModel2d(f_rhs)
+    qoi = QoISampling2d(sample_points_2d)
+    downsampler = torch.nn.Sequential(
+        torch.nn.Unflatten(-2, (1, n + 1)),
+        VertexToVolumeInterpolator2d(),
+        torch.nn.AvgPool2d(1, stride=scaling_factor),
+        VolumeToVertexInterpolator2d(),
+        torch.nn.Flatten(-3, -2),
+    )
+    nn_model = torch.nn.Sequential(
+        torch.nn.Unflatten(-2, (1, n + 1)),
+        VertexToVolumeInterpolator2d(),
+        torch.nn.Conv2d(1, 4, 3, padding=1),
+        torch.nn.ReLU(),
+        torch.nn.MaxPool2d(2, ceil_mode=True),
+        torch.nn.Conv2d(4, 4, 3, padding=1),
+        torch.nn.ReLU(),
+        torch.nn.MaxPool2d(2, ceil_mode=True),
+        torch.nn.Conv2d(4, 8, 3, padding=1),
+        torch.nn.ReLU(),
+        torch.nn.MaxPool2d(2, ceil_mode=True),
+        torch.nn.Conv2d(8, 8, 3, padding=1),
+        torch.nn.ReLU(),
+        torch.nn.Conv2d(8, 1, 3, padding=1),
+        VolumeToVertexInterpolator2d(),
+        torch.nn.Flatten(-3, -2),
+    )
+else:
+    raise RuntimeError(f"invalid dimension: {dim}")
 
-distribution = LogNormalDistribution1d(n, Lambda, a_power)
-physics_model_highres = DiffusionModel1d(f_rhs)
-qoi = QoISampling1d(sample_points)
 n_samples = n_samples_train + n_samples_valid + n_samples_test
 if not os.path.exists(data_filename):
     dataset = PEDSDataset(distribution, physics_model_highres, qoi)
@@ -73,42 +137,8 @@ valid_dataloader = torch.utils.data.DataLoader(
 
 physics_model_lowres = physics_model_highres.coarsen(scaling_factor)
 
-downsampler = torch.nn.Sequential(
-    torch.nn.Unflatten(-1, (1, n + 1)),
-    VertexToVolumeInterpolator1d(),
-    torch.nn.AvgPool1d(1, stride=scaling_factor),
-    VolumeToVertexInterpolator1d(),
-    torch.nn.Flatten(-2, -1),
-)
+model = PEDSModel(physics_model_lowres, nn_model, downsampler, qoi)
 
-nn_model = torch.nn.Sequential(
-    torch.nn.Unflatten(-1, (1, n + 1)),
-    torch.nn.Conv1d(1, 4, 3, padding=1),
-    torch.nn.ReLU(),
-    torch.nn.MaxPool1d(2, ceil_mode=True),
-    torch.nn.Conv1d(4, 4, 3, padding=1),
-    torch.nn.ReLU(),
-    torch.nn.MaxPool1d(2, ceil_mode=True),
-    torch.nn.Conv1d(4, 8, 3, padding=1),
-    torch.nn.ReLU(),
-    torch.nn.MaxPool1d(2, ceil_mode=True),
-    torch.nn.Conv1d(8, 8, 3, padding=1),
-    torch.nn.ReLU(),
-    torch.nn.Conv1d(8, 1, 3, padding=1),
-    torch.nn.Flatten(-2, -1),
-)
-
-if use_peds:
-    model = PEDSModel(physics_model_lowres, nn_model, downsampler, qoi)
-else:
-    dense_layers = torch.nn.Sequential(
-        torch.nn.Linear(n_lowres + 1, n_lowres),
-        torch.nn.ReLU(),
-        torch.nn.Linear(n_lowres, n_lowres),
-        torch.nn.ReLU(),
-        torch.nn.Linear(n_lowres, len(sample_points)),
-    )
-    model = nn_model + dense_layers
 n_param = sum([torch.numel(p) for p in model.parameters()])
 print(f"number of model parameters = {n_param}")
 
@@ -149,8 +179,7 @@ for epoch in range(n_epoch):
         {"train": train_loss_avg, "valid": valid_loss, "coarse": coarse_loss},
         epoch,
     )
-    if isinstance(model, PEDSModel):
-        writer.add_scalar("NN weight", model.w.detach(), epoch)
+    writer.add_scalar("NN weight", model.w.detach(), epoch)
     writer.add_scalar("gain", coarse_loss / valid_loss, epoch)
     writer.add_scalar("learning rate", scheduler.get_last_lr()[0], epoch)
     print(

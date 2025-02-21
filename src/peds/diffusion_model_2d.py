@@ -231,7 +231,7 @@ class DiffusionModel2dOperator(torch.autograd.Function):
             u = batched_u.reshape(f_rhs.shape)
         else:
             raise RuntimeError("tensor needs to be at least two-dimensional")
-        return torch.tensor(u)
+        return torch.tensor(u, dtype=torch.float32)
 
     @staticmethod
     def backward(ctx, grad_output):
@@ -327,3 +327,22 @@ class DiffusionModel2d(torch.nn.Module):
 
         :arg x: diffusion tensor alpha, can be multidimensional"""
         return DiffusionModel2dOperator.apply(self.metadata, x)
+
+    def coarsen(self, scaling_factor):
+        """Return a coarsened version of the model
+
+        :arg scaling_factor: coarsening factor, must be an integer divisor of problem size
+        """
+        f_rhs = self.metadata["f_rhs"]
+        n = f_rhs.shape[-1]
+        assert (
+            n == (n // scaling_factor) * scaling_factor
+        ), "scaling factor must divide problem size"
+        # Construct coarse RHS by averaging over final two dimensions
+        f_rhs_coarse = torch.squeeze(
+            torch.nn.functional.avg_pool2d(
+                torch.unsqueeze(torch.unsqueeze(f_rhs, 0), 0),
+                kernel_size=(scaling_factor, scaling_factor),
+            )
+        )
+        return DiffusionModel2d(f_rhs_coarse)

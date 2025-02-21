@@ -162,12 +162,11 @@ class DiffusionModel1d(torch.nn.Module):
             n == (n // scaling_factor) * scaling_factor
         ), "scaling factor must divide problem size"
         # Construct coarse RHS by averaging over final dimension
-        f_rhs_coarse = torch.mean(
-            torch.reshape(
-                f_rhs,
-                (*f_rhs.shape[:-1], f_rhs.shape[-1] // scaling_factor, scaling_factor),
-            ),
-            -1,
+        f_rhs_coarse = torch.squeeze(
+            torch.nn.functional.avg_pool1d(
+                torch.unsqueeze(torch.unsqueeze(f_rhs, 0), 0),
+                kernel_size=scaling_factor,
+            )
         )
         return DiffusionModel1d(f_rhs_coarse)
 
