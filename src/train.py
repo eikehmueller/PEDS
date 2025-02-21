@@ -1,5 +1,6 @@
 import itertools
 import os.path
+import sys
 import tomllib
 import torch
 from torch.utils.tensorboard import SummaryWriter
@@ -22,7 +23,12 @@ from peds.interpolation_2d import (
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 print(f"Running on device {device}")
 
-config_file = "config.toml"
+if len(sys.argv) < 2:
+    print(f"Usage: python {sys.argv[0]} CONFIGFILE")
+    sys.exit(0)
+
+config_file = sys.argv[1]
+print(f"reading parameters from {config_file}")
 
 with open(config_file, "rb") as f:
     config = tomllib.load(f)
@@ -48,15 +54,14 @@ batch_size = config["train"]["batch_size"]
 n_epoch = config["train"]["n_epoch"]
 lr_initial = config["train"]["lr_initial"]
 lr_target = config["train"]["lr_final"]
-sample_points_1d = config["qoi"]["sample_points_1d"]
-sample_points_2d = config["qoi"]["sample_points_2d"]
+sample_points = config["qoi"]["sample_points"]
 n_lowres = n // scaling_factor
 
 if dim == 1:
     f_rhs = torch.ones(size=(n,), dtype=torch.float)
     distribution = LogNormalDistribution1d(n, Lambda, a_power)
     physics_model_highres = DiffusionModel1d(f_rhs)
-    qoi = QoISampling1d(sample_points_1d)
+    qoi = QoISampling1d(sample_points)
     downsampler = torch.nn.Sequential(
         torch.nn.Unflatten(-1, (1, n + 1)),
         VertexToVolumeInterpolator1d(),
@@ -86,7 +91,7 @@ elif dim == 2:
     f_rhs = torch.ones(size=(n, n), dtype=torch.float)
     distribution = LogNormalDistribution2d(n, Lambda)
     physics_model_highres = DiffusionModel2d(f_rhs)
-    qoi = QoISampling2d(sample_points_2d)
+    qoi = QoISampling2d(sample_points)
     downsampler = torch.nn.Sequential(
         torch.nn.Unflatten(-2, (1, n + 1)),
         VertexToVolumeInterpolator2d(),
