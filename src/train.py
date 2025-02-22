@@ -65,6 +65,8 @@ if dim == 1:
     AvgPool = torch.nn.AvgPool1d
     Conv = torch.nn.Conv1d
     MaxPool = torch.nn.MaxPool1d
+    flatten_idx = -1
+
 elif dim == 2:
     device = "cpu"
     f_rhs = torch.ones(size=(n, n), dtype=torch.float)
@@ -76,20 +78,21 @@ elif dim == 2:
     AvgPool = torch.nn.AvgPool2d
     Conv = torch.nn.Conv2d
     MaxPool = torch.nn.MaxPool2d
+    flatten_idx = -2
 else:
     raise RuntimeError(f"invalid dimension: {dim}")
 
 physics_model_highres = DiffusionModel(f_rhs)
 qoi = QoISampling(sample_points)
 downsampler = torch.nn.Sequential(
-    torch.nn.Unflatten(-2, (1, n + 1)),
+    torch.nn.Unflatten(flatten_idx, (1, n + 1)),
     VertexToVolumeInterpolator(),
     AvgPool(1, stride=scaling_factor),
     VolumeToVertexInterpolator(),
-    torch.nn.Flatten(-3, -2),
+    torch.nn.Flatten(flatten_idx - 1, flatten_idx),
 )
 nn_model = torch.nn.Sequential(
-    torch.nn.Unflatten(-2, (1, n + 1)),
+    torch.nn.Unflatten(flatten_idx, (1, n + 1)),
     VertexToVolumeInterpolator(),
     Conv(1, 4, 3, padding=1),
     torch.nn.ReLU(),
@@ -104,7 +107,7 @@ nn_model = torch.nn.Sequential(
     torch.nn.ReLU(),
     Conv(8, 1, 3, padding=1),
     VolumeToVertexInterpolator(),
-    torch.nn.Flatten(-3, -2),
+    torch.nn.Flatten(flatten_idx - 1, flatten_idx),
 )
 
 print(f"Running on device {device}")
