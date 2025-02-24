@@ -3,6 +3,7 @@ import os
 import sys
 import tomllib
 import torch
+import time
 
 import numpy as np
 from matplotlib import pyplot as plt
@@ -88,13 +89,13 @@ if not os.path.exists(data_filename):
     dataset = PEDSDataset(distribution, physics_model_highres, qoi)
     dataset.save(n_samples, data_filename)
 dataset = SavedDataset(data_filename)
-
+assert len(dataset) == n_samples
 
 test_dataset = list(
     itertools.islice(
         dataset,
-        n_samples_train + n_samples_valid,
-        n_samples_train + n_samples_valid + n_samples_test,
+        n_samples_train,  # + n_samples_valid,
+        n_samples_train + n_samples_valid,  # + n_samples_test,
     )
 )
 
@@ -119,21 +120,39 @@ n_param = sum([torch.numel(p) for p in model.parameters()])
 print(f"number of model parameters = {n_param}")
 
 model = model.to(device)
-coarse_model = torch.nn.Sequential(downsampler, physics_model_lowres, qoi)
+
+sf = 2
+coarse_model = dict()
+while sf <= scaling_factor:
+    coarse_model[sf] = torch.nn.Sequential(
+        torch.nn.Sequential(
+            torch.nn.Unflatten(flatten_idx, (1, n + 1)),
+            VertexToVolumeInterpolator(),
+            AvgPool(1, stride=sf),
+            VolumeToVertexInterpolator(),
+            torch.nn.Flatten(flatten_idx - 1, flatten_idx),
+        ),
+        physics_model_highres.coarsen(sf),
+        qoi,
+    )
+    sf *= 2
 
 loss_fn = torch.nn.MSELoss()
 
 test_loss_avg = 0
 for i, data in enumerate(test_dataloader):
     alpha, q_target = data
+    print(q_target)
     alpha = alpha.to(device)
     q_target = q_target.to(device)
     q_pred = model(alpha)
     loss = loss_fn(q_pred, q_target)
     test_loss = loss.item()
-    test_loss_avg += test_loss / (n_samples_test / batch_size)
-    q_pred_coarse = coarse_model(alpha)
-    coarse_loss = loss_fn(q_pred_coarse, q_target)
+    test_loss_avg += test_loss
+    for sf, cm in coarse_model.items():
+        q_pred_coarse = cm(alpha)
+        coarse_loss = loss_fn(q_pred_coarse, q_target)
+        print(f"coarse loss [{sf:d}x] = {coarse_loss:12.6f}")
 
 data = next(iter(test_dataloader))
 alpha, q_target = data
@@ -141,12 +160,29 @@ alpha = alpha.to(device)
 q_target = q_target.to(device)
 q_pred = model(alpha)
 
-q_pred_coarse = coarse_model(alpha)
-q_pred = q_pred.cpu().detach().numpy()
-q_pred_coarse = q_pred_coarse.cpu().detach().numpy()
-q_target = q_target.cpu().detach().numpy()
+print(f"PEDS loss        = {test_loss_avg:12.6f}")
 
-print(f"test loss = {test_loss_avg:12.6f} coarse loss = {coarse_loss:12.6f}")
+dataloader = torch.utils.data.DataLoader(dataset, batch_size=n_samples)
+for data in test_dataloader:
+    alpha, _ = data
+    t_start = time.perf_counter()
+    _ = model(alpha)
+    t_finish = time.perf_counter()
+    t_delta_peds = t_finish - t_start
+    t_start = time.perf_counter()
+    _ = physics_model_highres(alpha)
+    t_finish = time.perf_counter()
+    t_delta_petsc = t_finish - t_start
+    for sf, cm in coarse_model.items():
+        t_start = time.perf_counter()
+        _ = cm(alpha)
+        t_finish = time.perf_counter()
+        t_delta_ = t_finish - t_start
+        print(f"dt [coarse, {sf:d}] = {t_delta_:8.4f} s")
+
+print(f"dt [PEDS]      = {t_delta_peds:8.4f} s")
+print(f"dt [PETSc]     = {t_delta_petsc:8.4f} s")
+
 
 # Visualise relative error
 
@@ -174,10 +210,15 @@ if dim == 1:
     ax.set_yscale("log")
 else:
     fig, ax = plt.subplots()
+    ax.set_aspect("equal")
     ax.set_xlim(0, 1)
     ax.set_ylim(0, 1)
-    error_coarse = np.mean(abs(q_pred_coarse - q_target) / q_target, axis=0)
-    error_peds = np.mean(abs(q_pred - q_target) / q_target, axis=0)
+    error_coarse = np.mean(
+        abs(q_pred_coarse.numpy() - q_target.numpy()) / q_target.numpy(), axis=0
+    )
+    error_peds = np.mean(
+        abs(q_pred.detach().numpy() - q_target.numpy()) / q_target.numpy(), axis=0
+    )
     ax.scatter(
         sample_points[:, 0],
         sample_points[:, 1],
@@ -195,17 +236,17 @@ else:
     )
     for j in range(sample_points.shape[0]):
         ax.text(
-            sample_points[j, 0] + 0.05,
+            sample_points[j, 0] + 0.125 * error_coarse[j],
             sample_points[j, 1],
-            f"{error_coarse[j]:6.4f}",
+            f"{100*error_coarse[j]:6.1f}%",
             color="red",
             verticalalignment="top",
             size="small",
         )
         ax.text(
-            sample_points[j, 0] + 0.05,
+            sample_points[j, 0] + 0.125 * error_coarse[j],
             sample_points[j, 1],
-            f"{error_peds[j]:6.4f}",
+            f"{100*error_peds[j]:6.1f}%",
             verticalalignment="bottom",
             color="blue",
             size="small",
