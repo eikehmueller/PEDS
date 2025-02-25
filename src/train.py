@@ -129,7 +129,7 @@ train_dataloader = torch.utils.data.DataLoader(
     train_dataset, batch_size=batch_size, shuffle=True
 )
 valid_dataloader = torch.utils.data.DataLoader(
-    train_dataset, batch_size=n_samples_valid
+    valid_dataset, batch_size=n_samples_valid
 )
 
 
