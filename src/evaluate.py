@@ -142,7 +142,6 @@ loss_fn = torch.nn.MSELoss()
 test_loss_avg = 0
 for i, data in enumerate(test_dataloader):
     alpha, q_target = data
-    print(q_target)
     alpha = alpha.to(device)
     q_target = q_target.to(device)
     q_pred = model(alpha)
