@@ -94,8 +94,8 @@ assert len(dataset) == n_samples
 test_dataset = list(
     itertools.islice(
         dataset,
-        n_samples_train,  # + n_samples_valid,
-        n_samples_train + n_samples_valid,  # + n_samples_test,
+        n_samples_train + n_samples_valid,
+        n_samples_train + n_samples_valid + n_samples_test,
     )
 )
 
