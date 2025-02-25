@@ -20,9 +20,6 @@ from peds.interpolation_2d import (
     VolumeToVertexInterpolator2d,
 )
 
-device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-print(f"Running on device {device}")
-
 if len(sys.argv) < 2:
     print(f"Usage: python {sys.argv[0]} CONFIGFILE")
     sys.exit(0)
@@ -58,67 +55,63 @@ sample_points = config["qoi"]["sample_points"]
 n_lowres = n // scaling_factor
 
 if dim == 1:
+    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     f_rhs = torch.ones(size=(n,), dtype=torch.float)
     distribution = LogNormalDistribution1d(n, Lambda, a_power)
-    physics_model_highres = DiffusionModel1d(f_rhs)
-    qoi = QoISampling1d(sample_points)
-    downsampler = torch.nn.Sequential(
-        torch.nn.Unflatten(-1, (1, n + 1)),
-        VertexToVolumeInterpolator1d(),
-        torch.nn.AvgPool1d(1, stride=scaling_factor),
-        VolumeToVertexInterpolator1d(),
-        torch.nn.Flatten(-2, -1),
-    )
-    nn_model = torch.nn.Sequential(
-        torch.nn.Unflatten(-1, (1, n + 1)),
-        VertexToVolumeInterpolator1d(),
-        torch.nn.Conv1d(1, 4, 3, padding=1),
-        torch.nn.ReLU(),
-        torch.nn.MaxPool1d(2, ceil_mode=True),
-        torch.nn.Conv1d(4, 4, 3, padding=1),
-        torch.nn.ReLU(),
-        torch.nn.MaxPool1d(2, ceil_mode=True),
-        torch.nn.Conv1d(4, 8, 3, padding=1),
-        torch.nn.ReLU(),
-        torch.nn.MaxPool1d(2, ceil_mode=True),
-        torch.nn.Conv1d(8, 8, 3, padding=1),
-        torch.nn.ReLU(),
-        torch.nn.Conv1d(8, 1, 3, padding=1),
-        VolumeToVertexInterpolator1d(),
-        torch.nn.Flatten(-2, -1),
-    )
+    DiffusionModel = DiffusionModel1d
+    QoISampling = QoISampling1d
+    VertexToVolumeInterpolator = VertexToVolumeInterpolator1d
+    VolumeToVertexInterpolator = VolumeToVertexInterpolator1d
+    AvgPool = torch.nn.AvgPool1d
+    Conv = torch.nn.Conv1d
+    MaxPool = torch.nn.MaxPool1d
+    flatten_idx = -1
+
 elif dim == 2:
+    device = "cpu"
     f_rhs = torch.ones(size=(n, n), dtype=torch.float)
     distribution = LogNormalDistribution2d(n, Lambda)
-    physics_model_highres = DiffusionModel2d(f_rhs)
-    qoi = QoISampling2d(sample_points)
-    downsampler = torch.nn.Sequential(
-        torch.nn.Unflatten(-2, (1, n + 1)),
-        VertexToVolumeInterpolator2d(),
-        torch.nn.AvgPool2d(1, stride=scaling_factor),
-        VolumeToVertexInterpolator2d(),
-        torch.nn.Flatten(-3, -2),
-    )
-    nn_model = torch.nn.Sequential(
-        torch.nn.Unflatten(-2, (1, n + 1)),
-        VertexToVolumeInterpolator2d(),
-        torch.nn.Conv2d(1, 4, 3, padding=1),
-        torch.nn.ReLU(),
-        torch.nn.MaxPool2d(2, ceil_mode=True),
-        torch.nn.Conv2d(4, 4, 3, padding=1),
-        torch.nn.ReLU(),
-        torch.nn.MaxPool2d(2, ceil_mode=True),
-        torch.nn.Conv2d(4, 8, 3, padding=1),
-        torch.nn.ReLU(),
-        torch.nn.MaxPool2d(2, ceil_mode=True),
-        torch.nn.Conv2d(8, 8, 3, padding=1),
-        torch.nn.ReLU(),
-        torch.nn.Conv2d(8, 1, 3, padding=1),
-        VolumeToVertexInterpolator2d(),
-        torch.nn.Flatten(-3, -2),
-    )
+    DiffusionModel = DiffusionModel2d
+    QoISampling = QoISampling2d
+    VertexToVolumeInterpolator = VertexToVolumeInterpolator2d
+    VolumeToVertexInterpolator = VolumeToVertexInterpolator2d
+    AvgPool = torch.nn.AvgPool2d
+    Conv = torch.nn.Conv2d
+    MaxPool = torch.nn.MaxPool2d
+    flatten_idx = -2
 else:
     raise RuntimeError(f"invalid dimension: {dim}")
+
+physics_model_highres = DiffusionModel(f_rhs)
+qoi = QoISampling(sample_points)
+downsampler = torch.nn.Sequential(
+    torch.nn.Unflatten(flatten_idx, (1, n + 1)),
+    VertexToVolumeInterpolator(),
+    AvgPool(1, stride=scaling_factor),
+    VolumeToVertexInterpolator(),
+    torch.nn.Flatten(flatten_idx - 1, flatten_idx),
+)
+nn_model = torch.nn.Sequential(
+    torch.nn.Unflatten(flatten_idx, (1, n + 1)),
+    VertexToVolumeInterpolator(),
+    Conv(1, 4, 3, padding=1),
+    torch.nn.ReLU(),
+    MaxPool(2, ceil_mode=True),
+    Conv(4, 8, 3, padding=1),
+    torch.nn.ReLU(),
+    MaxPool(2, ceil_mode=True),
+    Conv(8, 16, 3, padding=1),
+    torch.nn.ReLU(),
+    MaxPool(2, ceil_mode=True),
+    Conv(16, 16, 3, padding=1),
+    torch.nn.ReLU(),
+    Conv(16, 1, 3, padding=1),
+    VolumeToVertexInterpolator(),
+    torch.nn.Flatten(flatten_idx - 1, flatten_idx),
+)
+
+print(f"Running on device {device}")
+
 
 n_samples = n_samples_train + n_samples_valid + n_samples_test
 if not os.path.exists(data_filename):
@@ -136,7 +129,7 @@ train_dataloader = torch.utils.data.DataLoader(
     train_dataset, batch_size=batch_size, shuffle=True
 )
 valid_dataloader = torch.utils.data.DataLoader(
-    train_dataset, batch_size=n_samples_valid
+    valid_dataset, batch_size=n_samples_valid
 )
 
 
