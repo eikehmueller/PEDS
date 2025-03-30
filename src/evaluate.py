@@ -10,7 +10,11 @@ from matplotlib import pyplot as plt
 
 from peds.diffusion_model_1d import DiffusionModel1d
 from peds.diffusion_model_2d import DiffusionModel2d
-from peds.distributions import LogNormalDistribution1d, LogNormalDistribution2d
+from peds.distributions import (
+    LogNormalDistribution1d,
+    LogNormalDistribution2d,
+    FibreDistribution2d,
+)
 from peds.quantity_of_interest import QoISampling1d, QoISampling2d
 from peds.datasets import PEDSDataset, SavedDataset
 from peds.peds_model import PEDSModel
@@ -45,8 +49,6 @@ dim = config["model"]["dimension"]
 model_filename = config["model"]["filename"]
 n = config["discretisation"]["n"]
 scaling_factor = config["discretisation"]["scaling_factor"]
-Lambda = config["data"]["Lambda"]
-a_power = config["data"]["a_power"]
 n_samples_train = config["data"]["n_samples_train"]
 n_samples_valid = config["data"]["n_samples_valid"]
 n_samples_test = config["data"]["n_samples_test"]
@@ -59,7 +61,12 @@ n_lowres = n // scaling_factor
 if dim == 1:
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     f_rhs = torch.ones(size=(n,), dtype=torch.float)
-    distribution = LogNormalDistribution1d(n, Lambda, a_power)
+    if config["data"]["distribution"] == "log_normal":
+        distribution = LogNormalDistribution1d(
+            n, config["data"]["Lambda"], config["data"]["a_power"]
+        )
+    else:
+        raise RuntimeError("Only log-normal distribution supported in 1d")
     DiffusionModel = DiffusionModel1d
     QoISampling = QoISampling1d
     VertexToVolumeInterpolator = VertexToVolumeInterpolator1d
@@ -69,7 +76,20 @@ if dim == 1:
 elif dim == 2:
     device = "cpu"
     f_rhs = torch.ones(size=(n, n), dtype=torch.float)
-    distribution = LogNormalDistribution2d(n, Lambda)
+    if config["data"]["distribution"] == "log_normal":
+        distribution = LogNormalDistribution2d(n, config["data"]["Lambda"])
+    elif config["data"]["distribution"] == "fibre":
+        distribution = FibreDistribution2d(
+            n,
+            config["data"]["n_fibres"],
+            config["data"]["d_fibre_min"],
+            config["data"]["d_fibre_max"],
+            config["data"]["kdiff_background"],
+            config["data"]["kdiff_fibre_min"],
+            config["data"]["kdiff_fibre_max"],
+        )
+    else:
+        raise RuntimeError(f"Unknown distribution: {config["data"]["distribution"]}")
     DiffusionModel = DiffusionModel2d
     QoISampling = QoISampling2d
     VertexToVolumeInterpolator = VertexToVolumeInterpolator2d

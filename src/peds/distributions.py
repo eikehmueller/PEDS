@@ -1,3 +1,4 @@
+import itertools
 import numpy as np
 import scipy as sp
 import petsc4py
@@ -181,6 +182,76 @@ class LogNormalDistribution2d:
             with self._alpha_vec as v:
                 u[:, :] = np.asarray(v[:]).reshape((self.n + 1, self.n + 1))
             yield u
+
+
+class FibreDistribution2d:
+    """Artificial distribution of fibres in the domain
+
+    The diffusion coefficient in the background material is fixed, and this is overlaid with
+    a fixed number of fibres with a different diffusion coefficients, which is chosen (uniformly)
+    from a given range. The thickness of the fibres is also drawn uniformly from a given range
+    of thicknesses.
+    """
+
+    def __init__(
+        self,
+        n,
+        n_fibres=8,
+        d_fibre_min=0.03,
+        d_fibre_max=0.05,
+        kdiff_background=1.0,
+        kdiff_fibre_min=0.01,
+        kdiff_fibre_max=0.1,
+        seed=141517,
+    ):
+        """
+
+        :arg n: number of grid cells
+        :arg nfibres: number of fibres per sample
+        :arg d_fibre_min: minimal diameter of a single fibre
+        :arg d_fibre_max: maximal diameter of a single fibre
+        :arg kdiff_background: diffusion coefficient in background
+        :arg kdiff_fibre_min: lower bound for diffusion coefficient in background
+        :arg kdiff_fibre_max: upper bound for diffusion coefficient in background
+        """
+        self.n = n
+        self._n_fibres = n_fibres
+        self._d_fibre_min = d_fibre_min
+        self._d_fibre_max = d_fibre_max
+        self._kdiff_background = kdiff_background
+        self._kdiff_fibre_min = kdiff_fibre_min
+        self._kdiff_fibre_max = kdiff_fibre_max
+        self._rng = np.random.default_rng(seed=seed)
+        h = 1 / self.n
+        X = np.arange(0, 1 + h / 2, h)
+        Y = np.arange(0, 1 + h / 2, h)
+        self._vertices = np.asarray(
+            [(x, y) for y, x in itertools.product(Y, X)]
+        ).reshape([self.n + 1, self.n + 1, 2])
+
+    def __iter__(self):
+        """Iterator over dataset"""
+
+        while True:
+            alpha = np.log(self._kdiff_background) * np.ones(
+                shape=(self.n + 1, self.n + 1)
+            )
+            for j in range(self._n_fibres):
+                p0 = self._rng.uniform(low=0, high=1, size=[2])
+                theta = self._rng.uniform(low=0, high=2 * np.pi)
+                n0 = np.asarray([np.cos(theta), np.sin(theta)])
+                d_fibre = self._rng.uniform(
+                    low=self._d_fibre_min, high=self._d_fibre_max
+                )
+                k_diff = self._rng.uniform(
+                    low=self._kdiff_fibre_min, high=self._kdiff_fibre_max
+                )
+                alpha_fibre = np.log(k_diff)
+                alpha[np.where(np.abs((self._vertices - p0) @ n0) < d_fibre)] = (
+                    alpha_fibre
+                )
+
+            yield alpha
 
 
 def save_vtk(alpha_samples, filename):
