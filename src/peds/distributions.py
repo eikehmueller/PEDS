@@ -236,7 +236,7 @@ class FibreDistribution2d:
             alpha = np.log(self._kdiff_background) * np.ones(
                 shape=(self.n + 1, self.n + 1)
             )
-            for j in range(self._n_fibres):
+            for _ in range(self._n_fibres):
                 p0 = self._rng.uniform(low=0, high=1, size=[2])
                 theta = self._rng.uniform(low=0, high=2 * np.pi)
                 n0 = np.asarray([np.cos(theta), np.sin(theta)])

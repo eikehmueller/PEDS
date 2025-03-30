@@ -38,9 +38,9 @@ print(f"reading parameters from {config_file}")
 with open(config_file, "rb") as f:
     config = tomllib.load(f)
 print()
-print(f"==== parameters ====")
+print("==== parameters ====")
 print()
-with open(config_file, "r") as f:
+with open(config_file, "r", encoding="utf8") as f:
     for line in f.readlines():
         print(line.strip())
 print()
