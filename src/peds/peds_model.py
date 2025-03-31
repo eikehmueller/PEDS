@@ -61,9 +61,9 @@ class PEDSModel(torch.nn.Module):
         """
         torch.save(self._nn_model, filename)
         with open(
-            os.path.splitext(filename)[0] + "_nnweight.json", encoding="utf8"
+            os.path.splitext(filename)[0] + "_nnweight.json", "w", encoding="utf8"
         ) as f:
-            json.dump(dict(weight, self.w.detach().item()), f)
+            json.dump(dict(weight=self.w.detach().item()), f)
 
     def load(self, filename):
         """load nn model and weight from disk
