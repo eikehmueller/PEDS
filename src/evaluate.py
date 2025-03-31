@@ -167,10 +167,11 @@ for i, data in enumerate(test_dataloader):
     loss = loss_fn(q_pred, q_target)
     test_loss = loss.item()
     test_loss_avg += test_loss
+    coarse_loss = dict()
     for sf, cm in coarse_model.items():
         q_pred_coarse = cm(alpha)
-        coarse_loss = loss_fn(q_pred_coarse, q_target)
-        print(f"coarse loss [{sf:d}x] = {coarse_loss:12.6f}")
+        coarse_loss[sf] = loss_fn(q_pred_coarse, q_target).detach().item()
+        print(f"coarse loss [{sf:d}x] = {coarse_loss[sf]:12.6f}")
 
 data = next(iter(test_dataloader))
 alpha, q_target = data
@@ -180,27 +181,79 @@ q_pred = model(alpha)
 
 print(f"PEDS loss        = {test_loss_avg:12.6f}")
 
-dataloader = torch.utils.data.DataLoader(dataset, batch_size=n_samples)
+dataloader = torch.utils.data.DataLoader(dataset, batch_size=n_samples_test)
 for data in test_dataloader:
     alpha, _ = data
     t_start = time.perf_counter()
     _ = model(alpha)
     t_finish = time.perf_counter()
-    t_delta_peds = t_finish - t_start
+    t_delta_peds = 1000 * (t_finish - t_start) / n_samples_test
     t_start = time.perf_counter()
     _ = physics_model_highres(alpha)
     t_finish = time.perf_counter()
-    t_delta_petsc = t_finish - t_start
+    t_delta_fine = 1000 * (t_finish - t_start) / n_samples_test
+    t_delta_coarse = dict()
     for sf, cm in coarse_model.items():
         t_start = time.perf_counter()
         _ = cm(alpha)
         t_finish = time.perf_counter()
-        t_delta_ = t_finish - t_start
-        print(f"dt [coarse, {sf:d}] = {t_delta_:8.4f} s")
+        t_delta_coarse[sf] = 1000 * (t_finish - t_start) / n_samples_test
+        print(f"dt [coarse, {sf:d}] = {t_delta_coarse[sf]:8.4f} ms")
 
-print(f"dt [PEDS]      = {t_delta_peds:8.4f} s")
-print(f"dt [PETSc]     = {t_delta_petsc:8.4f} s")
+print(f"dt [PEDS]      = {t_delta_peds:8.4f} ms")
+print(f"dt [fine]     = {t_delta_fine:8.4f} ms")
 
+plt.clf()
+
+plt.plot(
+    [t_delta_peds],
+    [np.sqrt(test_loss_avg)],
+    color="red",
+    linewidth=2,
+    marker="o",
+    markersize=6,
+    label="PEDS",
+)
+plt.plot(
+    [t_delta_coarse[sf] for sf in sorted(t_delta_coarse.keys())],
+    [np.sqrt(coarse_loss[sf]) for sf in sorted(coarse_loss.keys())],
+    linewidth=2,
+    color="blue",
+    marker="o",
+    markersize=6,
+    label="coarse",
+)
+plt.plot(
+    [t_delta_fine, t_delta_coarse[2]],
+    [0, np.sqrt(coarse_loss[2])],
+    color="blue",
+    linewidth=2,
+    linestyle="--",
+)
+plt.plot(
+    [t_delta_fine],
+    [0],
+    color="blue",
+    marker="o",
+    linewidth=2,
+    markersize=6,
+    markerfacecolor="white",
+    markeredgewidth=2,
+    label="highres",
+)
+
+for sf in sorted(t_delta_coarse.keys()):
+    plt.annotate(
+        f"   ${sf}\\times $", xy=(t_delta_coarse[sf], np.sqrt(coarse_loss[sf]))
+    )
+
+
+ax = plt.gca()
+ax.set_xlabel("time per sample [ms]")
+ax.set_ylabel("error")
+ax.set_xscale("log")
+plt.legend(loc="upper right")
+plt.savefig("performance.pdf", bbox_inches="tight")
 
 # Visualise relative error
 
@@ -212,7 +265,7 @@ if dim == 1:
     plt.plot(
         sample_points,
         np.mean(abs(q_pred - q_target) / q_target, axis=0),
-        linestyle="-",
+        linewidth=2,
         marker="o",
         markersize=6,
         label="PEDS",
@@ -222,7 +275,7 @@ if dim == 1:
         np.mean(abs(q_pred_coarse - q_target) / q_target, axis=0),
         marker="o",
         markersize=6,
-        linestyle="--",
+        linewidth=2,
         label="coarse",
     )
     ax.set_yscale("log")
