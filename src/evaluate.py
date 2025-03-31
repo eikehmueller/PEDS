@@ -131,11 +131,10 @@ downsampler = torch.nn.Sequential(
     torch.nn.Flatten(flatten_idx - 1, flatten_idx),
 )
 
-nn_model = torch.load(model_filename, weights_only=False)
-nn_model.eval()
 
+model = PEDSModel(physics_model_lowres, downsampler, qoi)
+model.load(model_filename)
 
-model = PEDSModel(physics_model_lowres, nn_model, downsampler, qoi)
 n_param = sum([torch.numel(p) for p in model.parameters()])
 print(f"number of model parameters = {n_param}")
 
