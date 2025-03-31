@@ -156,7 +156,7 @@ valid_dataloader = torch.utils.data.DataLoader(
 
 physics_model_lowres = physics_model_highres.coarsen(scaling_factor)
 
-model = PEDSModel(physics_model_lowres, nn_model, downsampler, qoi)
+model = PEDSModel(physics_model_lowres, downsampler, qoi, nn_model)
 
 n_param = sum([torch.numel(p) for p in model.parameters()])
 print(f"number of model parameters = {n_param}")
@@ -208,4 +208,4 @@ for epoch in range(n_epoch):
 
 writer.flush()
 
-torch.save(nn_model, model_filename)
+model.save(model_filename)
