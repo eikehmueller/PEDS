@@ -1,8 +1,7 @@
 import itertools
 import torch
-import numpy as np
 from peds.auxilliary import save_vtk
-from peds.distributions import LogNormalDistribution2d
+from peds.distributions_lognormal import LogNormalDistribution2d
 from peds.interpolation_2d import (
     VertexToVolumeInterpolator2d,
     VolumeToVertexInterpolator2d,

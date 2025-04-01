@@ -7,11 +7,11 @@ from torch.utils.tensorboard import SummaryWriter
 
 from peds.diffusion_model_1d import DiffusionModel1d
 from peds.diffusion_model_2d import DiffusionModel2d
-from peds.distributions import (
+from peds.distributions_lognormal import (
     LogNormalDistribution1d,
     LogNormalDistribution2d,
-    FibreDistribution2d,
 )
+from peds.distributions_fibres import FibreDistribution2d
 from peds.quantity_of_interest import QoISampling1d, QoISampling2d
 from peds.datasets import PEDSDataset, SavedDataset
 from peds.peds_model import PEDSModel

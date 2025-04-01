@@ -3,7 +3,7 @@ from tqdm import tqdm
 import numpy as np
 from matplotlib import pyplot as plt
 from peds.auxilliary import save_vtk
-from peds.distributions import matern, LogNormalDistribution2d
+from peds.distributions_lognormal import matern, LogNormalDistribution2d
 from firedrake import *
 
 
