@@ -98,7 +98,7 @@ class FibreDistributionYang2d:
         kdiff_fibre=0.01,
         seed=141517,
     ):
-        """
+        """Initialise new instance
 
         :arg n: number of grid cells
         :arg volume_fraction: volume fraction of fibres
