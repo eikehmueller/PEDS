@@ -2,7 +2,8 @@ import itertools
 from tqdm import tqdm
 import numpy as np
 from matplotlib import pyplot as plt
-from peds.distributions import matern, LogNormalDistribution2d, save_vtk
+from peds.auxilliary import save_vtk
+from peds.distributions import matern, LogNormalDistribution2d
 from firedrake import *
 
 
