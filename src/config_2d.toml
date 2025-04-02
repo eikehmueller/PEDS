@@ -26,10 +26,10 @@ Lambda = 0.1           # correlation length for log-normal distribution
 # parameters of fibre distribution
 [distribution.fibre]   
 volume_fraction=0.55   # fibre volume fraction
-r_fibre_avg=0.04       # average fibre radius
-r_fibre_min=0.03       # lower bound for fibre radius
-r_fibre_max=0.05       # upper bound for fibre radius
-r_fibre_sigma=0.04     # variance of fibre radius
+r_fibre_avg=0.0375     # average fibre radius
+r_fibre_min=0.025      # lower bound for fibre radius
+r_fibre_max=0.050      # upper bound for fibre radius
+r_fibre_sigma=0.0025   # variance of fibre radius
 gaussian = true        # Gaussian distribution of fibre radii?
 kdiff_background=1.0   # diffusion coefficient in background material
 kdiff_fibre = 0.01     # diffusion coefficient in fibres

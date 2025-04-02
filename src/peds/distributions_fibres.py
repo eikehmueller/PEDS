@@ -128,7 +128,7 @@ class FibreDistribution2d:
             r_fibres = self._r_fibre_dist.draw(self._fibre_locations.shape[0])
             n_fibres = r_fibres.shape[0]
             labels = self._rng.permutation(range(n_fibres))
-            eps_fibres = 3.0e-4
+            eps_fibres = 0.0015
             it_max_ovlap = 5e3
             num_repeats = 30
             for _ in range(num_repeats):

@@ -34,7 +34,7 @@ else:
         args.n,
         volume_fraction=0.55,
         r_fibre_dist=FibreRadiusDistribution(
-            r_avg=7.5e-3, r_min=5.0e-3, r_max=10.0e-3, sigma=0.5e-3, gaussian=True
+            r_avg=0.0375, r_min=0.025, r_max=0.05, sigma=0.0025, gaussian=True
         ),
     )
 
