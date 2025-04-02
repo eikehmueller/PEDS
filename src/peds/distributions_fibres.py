@@ -1,4 +1,5 @@
 import itertools
+import collections
 import numpy as np
 from scipy.stats import norm
 import matplotlib.patches as mpatches
@@ -6,6 +7,10 @@ import matplotlib.pyplot as plt
 
 
 __all__ = ["FibreDistribution2d"]
+
+FibreRadiusDistribution = collections.namedtuple(
+    "FibreRadiusDistribution", ["avg", "min", "max", "sigma", "gaussian"]
+)
 
 
 class FibreDistribution2d:
@@ -19,13 +24,11 @@ class FibreDistribution2d:
         n,
         L=0.2,
         volume_fraction=0.55,
-        r_fibre_avg=7.5e-3,
-        r_fibre_min=5.0e-3,
-        r_fibre_max=10.0e-3,
-        r_fibre_sigma=0.5e-4,
-        gaussian_distribution=False,
         kdiff_background=1.0,
         kdiff_fibre=0.01,
+        r_fibre_dist=FibreRadiusDistribution(
+            avg=7.5e-3, min=5.0e-3, max=10.0e-3, sigma=0.5e-4, gaussian=False
+        ),
         seed=141517,
     ):
         """Initialise new instance
@@ -33,12 +36,7 @@ class FibreDistribution2d:
         :arg n: number of grid cells
         :arg L: side length of physical domain [in mm]
         :arg volume_fraction: volume fraction of fibres
-        :arg r_fibre_avg: average fibre radius [in mm]
-        :arg r_fibre_min: minimal fibre radius [in mm]
-        :arg r_fibre_max: maximal fibre radius [in mm]
-        :arg r_fibre_sigma: standard deviation of fibre radius [in mm]
-        :arg gaussian_distribution: if True, draw fibre radii from a normal distribution, otherwise use set the
-             radius of all fibres to r_fibre_avg
+        :arg r_fibre_dist: fibre radius distribution
         :arg kdiff_background: diffusion coefficient in background
         :arg kdiff_fibre: diffusion coefficient in fibre
         :arg seed: seed of random number generator
@@ -46,33 +44,33 @@ class FibreDistribution2d:
         self.n = n
         self._volume_fraction = volume_fraction
         self._L = L
-        self._r_fibre_avg = r_fibre_avg
-        self._r_fibre_min = r_fibre_min
-        self._r_fibre_max = r_fibre_max
-        self._r_fibre_sigma = r_fibre_sigma
+        self._r_fibre_dist = r_fibre_dist
         self._kdiff_background = kdiff_background
         self._kdiff_fibre = kdiff_fibre
-        self._gaussian_distribution = gaussian_distribution
         self._rng = np.random.default_rng(seed=seed)
         # Vertices of the grid onto which the diffusion coefficient is projected
         h = self._L / self.n
         X = np.arange(0, self._L + h / 2, h)
         self._vertices = np.asarray(
-            [p for p in itertools.product(X, repeat=2)]
+            [(y, x) for (x, y) in itertools.product(X, repeat=2)]
         ).reshape([len(X) ** 2, 2])
         # compute fibre positions
         n_fibres_per_direction = int(
-            round(self._L / self._r_fibre_avg * np.sqrt(self._volume_fraction / np.pi))
+            round(
+                self._L
+                / self._r_fibre_dist.avg
+                * np.sqrt(self._volume_fraction / np.pi)
+            )
         )
         # fibre diameter
-        d_fibre = 2 * self._r_fibre_avg
+        d_fibre = 2 * self._r_fibre_dist.avg
         X0 = (
             np.arange(0, (n_fibres_per_direction - 0.5) * d_fibre, d_fibre)
             * self._L
             / (d_fibre * n_fibres_per_direction)
         )
         self._fibre_locations = np.asarray(
-            [p0 for p0 in itertools.product(X0, repeat=2)]
+            [p for p in itertools.product(X0, repeat=2)]
         ).reshape([len(X0) ** 2, 2])
 
     def _fibre_radii(self):
@@ -80,18 +78,19 @@ class FibreDistribution2d:
 
         Returns a vector of fibre radii with the same length as the number of fibres.
 
-        Depending on whwther gaussian_distribution is True or False, the fibre radii are drawn from a
-        normal distribution with given mean and variance, clipped to the range [r_fibre_min, r_fibre_max].
+        Depending on whether gaussian_distribution is True or False, the fibre radii are drawn from a
+        normal distribution with given mean and variance, clipped to the
+        range [r_fibre_dist.min, r_fibre_dist.max].
         """
         n_fibres = self._fibre_locations.shape[0]
-        if self._gaussian_distribution:
+        if self._r_fibre_dist.gaussian:
             # number of nodal points for the CDF
             n_points = 1000
             nodal_points = np.linspace(
-                self._r_fibre_min, self._r_fibre_max, num=n_points
+                self._r_fibre_dist.min, self._r_fibre_dist.max, num=n_points
             )
             pdf = norm.pdf(
-                nodal_points, loc=self._r_fibre_avg, scale=self._r_fibre_sigma
+                nodal_points, loc=self._r_fibre_dist.avg, scale=self._r_fibre_dist.sigma
             )
 
             cdf = np.cumsum(pdf)
@@ -100,11 +99,12 @@ class FibreDistribution2d:
             # use inverse sampling transform
             xi = self._rng.uniform(low=0, high=1, size=n_fibres)
             r_fibre = (
-                np.interp(xi, cdf, x) * (self._r_fibre_max - self._r_fibre_min)
-                + self._r_fibre_min
+                np.interp(xi, cdf, x)
+                * (self._r_fibre_dist.max - self._r_fibre_dist.min)
+                + self._r_fibre_dist.min
             )
         else:
-            r_fibre = np.ones(shape=(n_fibres,)) * self._r_fibre_avg
+            r_fibre = np.ones(shape=(n_fibres,)) * self._r_fibre_dist.avg
         return r_fibre
 
     def _dist_periodic(self, p, q):
