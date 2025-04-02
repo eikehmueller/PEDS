@@ -1,16 +1,57 @@
 import itertools
-import collections
 import numpy as np
 from scipy.stats import norm
 import matplotlib.patches as mpatches
 import matplotlib.pyplot as plt
 
 
-__all__ = ["FibreDistribution2d"]
+__all__ = ["FibreRadiusDistribution", "FibreDistribution2d"]
 
-FibreRadiusDistribution = collections.namedtuple(
-    "FibreRadiusDistribution", ["avg", "min", "max", "sigma", "gaussian"]
-)
+
+class FibreRadiusDistribution:
+    """Class representing the distribution of fibre radii"""
+
+    def __init__(self, r_avg, r_min, r_max, sigma, gaussian, seed=856219):
+        """Initialise new instance
+
+        :arg avg: average fibre radius
+        :arg min: minimum fibre radius
+        :arg max: maximum fibre radius
+        :arg sigma: standard deviation of fibre radius
+        :arg gaussian: whether to draw from a gaussian distribution
+        """
+        self.r_avg = r_avg
+        self.r_min = r_min
+        self.r_max = r_max
+        self.sigma = sigma
+        self.gaussian = gaussian
+        self._rng = np.random.default_rng(seed=seed)
+
+    def draw(self, n_samples):
+        """Draw given number of samples from distribution
+
+        Returns a vector of fibre radii with the same length as the number of fibres.
+
+        Depending on whether gaussian_distribution is True or False, the fibre radii are drawn from a
+        normal distribution with given mean and variance, clipped to the
+        range [self.min, self..max].
+        """
+
+        if self.gaussian:
+            # number of nodal points for the CDF
+            n_points = 1000
+            nodal_points = np.linspace(self.r_min, self.r_max, num=n_points)
+            pdf = norm.pdf(nodal_points, loc=self.r_avg, scale=self.sigma)
+
+            cdf = np.cumsum(pdf)
+            cdf /= cdf[-1]
+            x = np.linspace(0, 1, n_points)
+            # use inverse sampling transform
+            xi = self._rng.uniform(low=0, high=1, size=n_samples)
+            r_fibre = np.interp(xi, cdf, x) * (self.r_max - self.r_min) + self.r_min
+        else:
+            r_fibre = np.ones(shape=(n_samples,)) * self.r_avg
+        return r_fibre
 
 
 class FibreDistribution2d:
@@ -24,11 +65,11 @@ class FibreDistribution2d:
         n,
         L=0.2,
         volume_fraction=0.55,
+        r_fibre_dist=FibreRadiusDistribution(
+            r_avg=7.5e-3, r_min=5.0e-3, r_max=10.0e-3, sigma=0.5e-4, gaussian=True
+        ),
         kdiff_background=1.0,
         kdiff_fibre=0.01,
-        r_fibre_dist=FibreRadiusDistribution(
-            avg=7.5e-3, min=5.0e-3, max=10.0e-3, sigma=0.5e-4, gaussian=False
-        ),
         seed=141517,
     ):
         """Initialise new instance
@@ -58,12 +99,12 @@ class FibreDistribution2d:
         n_fibres_per_direction = int(
             round(
                 self._L
-                / self._r_fibre_dist.avg
+                / self._r_fibre_dist.r_avg
                 * np.sqrt(self._volume_fraction / np.pi)
             )
         )
         # fibre diameter
-        d_fibre = 2 * self._r_fibre_dist.avg
+        d_fibre = 2 * self._r_fibre_dist.r_avg
         X0 = (
             np.arange(0, (n_fibres_per_direction - 0.5) * d_fibre, d_fibre)
             * self._L
@@ -72,40 +113,6 @@ class FibreDistribution2d:
         self._fibre_locations = np.asarray(
             [p for p in itertools.product(X0, repeat=2)]
         ).reshape([len(X0) ** 2, 2])
-
-    def _fibre_radii(self):
-        """Draw fibre radii distribution
-
-        Returns a vector of fibre radii with the same length as the number of fibres.
-
-        Depending on whether gaussian_distribution is True or False, the fibre radii are drawn from a
-        normal distribution with given mean and variance, clipped to the
-        range [r_fibre_dist.min, r_fibre_dist.max].
-        """
-        n_fibres = self._fibre_locations.shape[0]
-        if self._r_fibre_dist.gaussian:
-            # number of nodal points for the CDF
-            n_points = 1000
-            nodal_points = np.linspace(
-                self._r_fibre_dist.min, self._r_fibre_dist.max, num=n_points
-            )
-            pdf = norm.pdf(
-                nodal_points, loc=self._r_fibre_dist.avg, scale=self._r_fibre_dist.sigma
-            )
-
-            cdf = np.cumsum(pdf)
-            cdf /= cdf[-1]
-            x = np.linspace(0, 1, n_points)
-            # use inverse sampling transform
-            xi = self._rng.uniform(low=0, high=1, size=n_fibres)
-            r_fibre = (
-                np.interp(xi, cdf, x)
-                * (self._r_fibre_dist.max - self._r_fibre_dist.min)
-                + self._r_fibre_dist.min
-            )
-        else:
-            r_fibre = np.ones(shape=(n_fibres,)) * self._r_fibre_dist.avg
-        return r_fibre
 
     def _dist_periodic(self, p, q):
         """Compute periodic distance between point p and array of points q
@@ -129,7 +136,7 @@ class FibreDistribution2d:
     def __iter__(self):
         """Iterator over dataset"""
         while True:
-            r_fibres = self._fibre_radii()
+            r_fibres = self._r_fibre_dist.draw(self._fibre_locations.shape[0])
             n_fibres = r_fibres.shape[0]
             labels = self._rng.permutation(range(n_fibres))
             eps_fibres = 3.0e-4
