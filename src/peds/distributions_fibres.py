@@ -142,7 +142,7 @@ class FibreDistribution2d:
             eps_fibres = 3.0e-4
             it_max_ovlap = 5e3
             num_repeats = 30
-            for k in range(num_repeats):
+            for _ in range(num_repeats):
                 tag_ovlap = 0
                 for j in range(n_fibres):
                     # loop over fibres
@@ -185,11 +185,6 @@ class FibreDistribution2d:
                     self._fibre_locations[labels[j], :] = p_j_new[:]
                 if tag_ovlap == 0:
                     break
-
-            self.visualise_fibres(
-                self._fibre_locations, r_fibres, "fibre_positions.pdf"
-            )
-
             alpha = np.log(self._kdiff_background) * np.ones(
                 shape=((self.n + 1) * (self.n + 1))
             )
@@ -198,38 +193,3 @@ class FibreDistribution2d:
                 alpha[np.where(dist < r)] = np.log(self._kdiff_fibre)
             alpha = np.reshape(alpha, (self.n + 1, self.n + 1))
             yield alpha
-
-    def visualise_fibres(self, fibre_locations, r_fibres, filename):
-        """Auxilliary method to visualise the fibre distribution
-
-        :arg fibre_locations: locations of the fibres
-        :arg r_fibres: radii of the fibres
-        :arg filename: name of the file to save the figure to
-        """
-        plt.clf()
-        ax = plt.gca()
-        ax.set_aspect("equal")
-        d_fibre = 2 * np.min(r_fibres)
-        ax.set_xlim(-d_fibre / 2, self._L + d_fibre / 2)
-        ax.set_ylim(-d_fibre / 2, self._L + d_fibre / 2)
-        ax.add_patch(
-            mpatches.Rectangle(
-                (0, 0), self._L, self._L, fill=False, edgecolor="black", lw=2
-            )
-        )
-        for j in range(fibre_locations.shape[0]):
-            for offset in itertools.product([-self._L, 0, +self._L], repeat=2):
-                ax.add_patch(
-                    mpatches.Circle(
-                        fibre_locations[j] + np.asarray(offset),
-                        r_fibres[j],
-                        edgecolor="blue",
-                        facecolor="blue",
-                        fill=offset == (0, 0),
-                    )
-                )
-        plt.savefig(filename)
-        true_volume_fraction = np.pi * np.sum(r_fibres**2) / (self._L**2)
-        print(
-            f"Target / true volume fraction = {self._volume_fraction:.6f} / {true_volume_fraction:.6f}"
-        )
