@@ -84,7 +84,9 @@ coarse_model = torch.nn.Sequential(downsampler, physics_model_lowres, qoi)
 
 
 loss_fn = torch.nn.MSELoss()
-gamma = (lr_target / config["train"]["lr_initial"]) ** (1 / config["train"]["n_epoch"])
+gamma = (config["train"]["lr_target"] / config["train"]["lr_initial"]) ** (
+    1 / config["train"]["n_epoch"]
+)
 print(f"learning rate decay factor = {gamma:8.5f}")
 optimizer = torch.optim.Adam(model.parameters(), lr=config["train"]["lr_initial"])
 scheduler = torch.optim.lr_scheduler.ExponentialLR(optimizer, gamma=gamma)
