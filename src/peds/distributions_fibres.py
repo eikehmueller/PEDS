@@ -66,7 +66,7 @@ class FibreDistribution2d:
         L=0.2,
         volume_fraction=0.55,
         r_fibre_dist=FibreRadiusDistribution(
-            r_avg=7.5e-3, r_min=5.0e-3, r_max=10.0e-3, sigma=0.5e-4, gaussian=True
+            r_avg=7.5e-3, r_min=5.0e-3, r_max=10.0e-3, sigma=0.5e-3, gaussian=True
         ),
         kdiff_background=1.0,
         kdiff_fibre=0.01,
