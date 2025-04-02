@@ -11,23 +11,30 @@ scaling_factor = 16 # ratio between fine and coarse grid cells
 [qoi]
 sample_points = [[0.790,0.356],[0.743,0.873],[0.456,0.914],[0.293,0.291],[0.123,0.434],[0.222,0.851],[0.865,0.638],[0.207,0.096],[0.940,0.129],[0.529,0.422]]
 
+# parameter for data generation
 [data]
-distribution = "fibre" # distribution 
-                       # parameters of fibre distribution
-n_fibres=8             #    number of fibres
-d_fibre_min=0.03       #    lower bound for fibre diameter
-d_fibre_max=0.05       #    upper bound for fibre diameter
-kdiff_background=1.0   #    diffusion coefficient in background material
-kdiff_fibre_min=0.01   #    lower bound for diffusion coefficient in fibres
-kdiff_fibre_max = 0.1  #    upper bound for diffusion coefficient in fibres
-                       # parameter of log-normal distribution
-Lambda = 0.1           #    correlation length for log-normal distribution
-a_power = 2            #    power in log-normal distribution
+distribution = "fibre" # distribution ("lognormal" or "fibre")
 n_samples_train = 2048 # number of training samples
 n_samples_valid = 32   # number of validation samples
 n_samples_test = 32    # number of test samples
 filename = "data_2d_128x128_fibres.npy"  # name of file with data
 
+# parameters of log-normal distribution
+[distribution.lognormal]                            
+Lambda = 0.1           # correlation length for log-normal distribution
+                     
+# parameters of fibre distribution
+[distribution.fibre]   
+volume_fraction=0.55   # fibre volume fraction
+r_fibre_avg=0.04       # average fibre radius
+r_fibre_min=0.03       # lower bound for fibre radius
+r_fibre_max=0.05       # upper bound for fibre radius
+r_fibre_sigma=0.04     # variance of fibre radius
+gaussian = true        # Gaussian distribution of fibre radii?
+kdiff_background=1.0   # diffusion coefficient in background material
+kdiff_fibre = 0.01     # diffusion coefficient in fibres
+
+# parameters for training algorithm
 [train]
 batch_size = 64     # batch size
 n_epoch = 1024       # number of epochs

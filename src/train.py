@@ -5,23 +5,14 @@ import tomllib
 import torch
 from torch.utils.tensorboard import SummaryWriter
 
-from peds.diffusion_model_1d import DiffusionModel1d
-from peds.diffusion_model_2d import DiffusionModel2d
-from peds.distributions_lognormal import (
-    LogNormalDistribution1d,
-    LogNormalDistribution2d,
-)
-from peds.distributions_fibres import FibreDistribution2d
-from peds.quantity_of_interest import QoISampling1d, QoISampling2d
 from peds.datasets import PEDSDataset, SavedDataset
 from peds.peds_model import PEDSModel
-from peds.interpolation_1d import (
-    VertexToVolumeInterpolator1d,
-    VolumeToVertexInterpolator1d,
-)
-from peds.interpolation_2d import (
-    VertexToVolumeInterpolator2d,
-    VolumeToVertexInterpolator2d,
+from common import (
+    get_distribution,
+    get_physics_model,
+    get_qoi,
+    get_downsampler,
+    get_nn_model,
 )
 
 if len(sys.argv) < 2:
@@ -41,103 +32,25 @@ with open(config_file, "r") as f:
         print(line.strip())
 print()
 
-dim = config["model"]["dimension"]
-model_filename = config["model"]["filename"]
-n = config["discretisation"]["n"]
-scaling_factor = config["discretisation"]["scaling_factor"]
-distribution = config["data"]["distribution"]
-n_samples_train = config["data"]["n_samples_train"]
-n_samples_valid = config["data"]["n_samples_valid"]
-n_samples_test = config["data"]["n_samples_test"]
-data_filename = config["data"]["filename"]
-batch_size = config["train"]["batch_size"]
-n_epoch = config["train"]["n_epoch"]
-lr_initial = config["train"]["lr_initial"]
-lr_target = config["train"]["lr_final"]
-sample_points = config["qoi"]["sample_points"]
-n_lowres = n // scaling_factor
 
-if dim == 1:
-    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-    f_rhs = torch.ones(size=(n,), dtype=torch.float)
-    if config["data"]["distribution"] == "log_normal":
-        distribution = LogNormalDistribution1d(
-            n, config["data"]["Lambda"], config["data"]["a_power"]
-        )
-    else:
-        raise RuntimeError("Only log-normal distribution supported in 1d")
-    DiffusionModel = DiffusionModel1d
-    QoISampling = QoISampling1d
-    VertexToVolumeInterpolator = VertexToVolumeInterpolator1d
-    VolumeToVertexInterpolator = VolumeToVertexInterpolator1d
-    AvgPool = torch.nn.AvgPool1d
-    Conv = torch.nn.Conv1d
-    MaxPool = torch.nn.MaxPool1d
-    flatten_idx = -1
-
-elif dim == 2:
-    device = "cpu"
-    f_rhs = torch.ones(size=(n, n), dtype=torch.float)
-    if config["data"]["distribution"] == "log_normal":
-        distribution = LogNormalDistribution2d(n, config["data"]["Lambda"])
-    elif config["data"]["distribution"] == "fibre":
-        distribution = FibreDistribution2d(
-            n,
-            config["data"]["n_fibres"],
-            config["data"]["d_fibre_min"],
-            config["data"]["d_fibre_max"],
-            config["data"]["kdiff_background"],
-            config["data"]["kdiff_fibre_min"],
-            config["data"]["kdiff_fibre_max"],
-        )
-    else:
-        raise RuntimeError(f"Unknown distribution: {config["data"]["distribution"]}")
-    DiffusionModel = DiffusionModel2d
-    QoISampling = QoISampling2d
-    VertexToVolumeInterpolator = VertexToVolumeInterpolator2d
-    VolumeToVertexInterpolator = VolumeToVertexInterpolator2d
-    AvgPool = torch.nn.AvgPool2d
-    Conv = torch.nn.Conv2d
-    MaxPool = torch.nn.MaxPool2d
-    flatten_idx = -2
-else:
-    raise RuntimeError(f"invalid dimension: {dim}")
-
-physics_model_highres = DiffusionModel(f_rhs)
-qoi = QoISampling(sample_points)
-downsampler = torch.nn.Sequential(
-    torch.nn.Unflatten(flatten_idx, (1, n + 1)),
-    VertexToVolumeInterpolator(),
-    AvgPool(1, stride=scaling_factor),
-    VolumeToVertexInterpolator(),
-    torch.nn.Flatten(flatten_idx - 1, flatten_idx),
-)
-nn_model = torch.nn.Sequential(
-    torch.nn.Unflatten(flatten_idx, (1, n + 1)),
-    VertexToVolumeInterpolator(),
-    Conv(1, 4, 3, padding=1),
-    torch.nn.ReLU(),
-    MaxPool(2, ceil_mode=True),
-    Conv(4, 4, 3, padding=1),
-    torch.nn.ReLU(),
-    MaxPool(2, ceil_mode=True),
-    Conv(4, 8, 3, padding=1),
-    torch.nn.ReLU(),
-    MaxPool(2, ceil_mode=True),
-    Conv(8, 8, 3, padding=1),
-    torch.nn.ReLU(),
-    MaxPool(2, ceil_mode=True),
-    Conv(8, 8, 3, padding=1),
-    torch.nn.ReLU(),
-    Conv(8, 1, 3, padding=1),
-    VolumeToVertexInterpolator(),
-    torch.nn.Flatten(flatten_idx - 1, flatten_idx),
+device = torch.device(
+    "cuda:0" if config["model"]["dimension"] and torch.cuda.is_available() else "cpu"
 )
 
 print(f"Running on device {device}")
 
+distribution = get_distribution(config)
+physics_model_highres = get_physics_model(config)
+qoi = get_qoi(config)
+downsampler = get_downsampler(config)
+nn_model = get_nn_model(config)
 
+n_samples_train = config["data"]["n_samples_train"]
+n_samples_valid = config["data"]["n_samples_valid"]
+n_samples_test = config["data"]["n_samples_test"]
 n_samples = n_samples_train + n_samples_valid + n_samples_test
+
+data_filename = config["data"]["filename"]
 if not os.path.exists(data_filename):
     dataset = PEDSDataset(distribution, physics_model_highres, qoi)
     dataset.save(n_samples, data_filename)
@@ -150,14 +63,16 @@ valid_dataset = list(
 )
 
 train_dataloader = torch.utils.data.DataLoader(
-    train_dataset, batch_size=batch_size, shuffle=True
+    train_dataset, batch_size=config["train"]["batch_size"], shuffle=True
 )
 valid_dataloader = torch.utils.data.DataLoader(
     valid_dataset, batch_size=n_samples_valid
 )
 
 
-physics_model_lowres = physics_model_highres.coarsen(scaling_factor)
+physics_model_lowres = physics_model_highres.coarsen(
+    config["discretisation"]["scaling_factor"]
+)
 
 model = PEDSModel(physics_model_lowres, downsampler, qoi, nn_model)
 
@@ -169,14 +84,14 @@ coarse_model = torch.nn.Sequential(downsampler, physics_model_lowres, qoi)
 
 
 loss_fn = torch.nn.MSELoss()
-gamma = (lr_target / lr_initial) ** (1 / n_epoch)
+gamma = (lr_target / config["train"]["lr_initial"]) ** (1 / config["train"]["n_epoch"])
 print(f"learning rate decay factor = {gamma:8.5f}")
-optimizer = torch.optim.Adam(model.parameters(), lr=lr_initial)
+optimizer = torch.optim.Adam(model.parameters(), lr=config["train"]["lr_initial"])
 scheduler = torch.optim.lr_scheduler.ExponentialLR(optimizer, gamma=gamma)
 
 writer = SummaryWriter(flush_secs=5)
 print(f"epoch      :  training    validation    coarse")
-for epoch in range(n_epoch):
+for epoch in range(config["train"]["n_epoch"]):
     train_loss_avg = 0
     for i, data in enumerate(train_dataloader):
         alpha, q_target = data
@@ -188,7 +103,7 @@ for epoch in range(n_epoch):
         loss.backward()
         optimizer.step()
         train_loss = loss.item()
-        train_loss_avg += train_loss / (n_samples_train / batch_size)
+        train_loss_avg += train_loss / (n_samples_train / config["train"]["batch_size"])
     alpha, q_target = next(iter(valid_dataloader))
     alpha = alpha.to(device)
     q_target = q_target.to(device)
@@ -211,4 +126,4 @@ for epoch in range(n_epoch):
 
 writer.flush()
 
-model.save(model_filename)
+model.save(config["model"]["filename"])

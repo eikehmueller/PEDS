@@ -1,6 +1,5 @@
 import argparse
 import itertools
-import numpy as np
 from peds.auxilliary import save_vtk
 from peds.distributions_lognormal import LogNormalDistribution2d
 from peds.distributions_fibres import FibreDistribution2d, FibreRadiusDistribution

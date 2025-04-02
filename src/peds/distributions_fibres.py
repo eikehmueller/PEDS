@@ -63,7 +63,6 @@ class FibreDistribution2d:
     def __init__(
         self,
         n,
-        L=0.2,
         volume_fraction=0.55,
         r_fibre_dist=FibreRadiusDistribution(
             r_avg=7.5e-3, r_min=5.0e-3, r_max=10.0e-3, sigma=0.5e-3, gaussian=True
@@ -75,7 +74,6 @@ class FibreDistribution2d:
         """Initialise new instance
 
         :arg n: number of grid cells
-        :arg L: side length of physical domain [in mm]
         :arg volume_fraction: volume fraction of fibres
         :arg r_fibre_dist: fibre radius distribution
         :arg kdiff_background: diffusion coefficient in background
@@ -84,31 +82,24 @@ class FibreDistribution2d:
         """
         self.n = n
         self._volume_fraction = volume_fraction
-        self._L = L
         self._r_fibre_dist = r_fibre_dist
         self._kdiff_background = kdiff_background
         self._kdiff_fibre = kdiff_fibre
         self._rng = np.random.default_rng(seed=seed)
         # Vertices of the grid onto which the diffusion coefficient is projected
-        h = self._L / self.n
-        X = np.arange(0, self._L + h / 2, h)
+        h = 1 / self.n
+        X = np.arange(0, 1 + h / 2, h)
         self._vertices = np.asarray(
             [(y, x) for (x, y) in itertools.product(X, repeat=2)]
         ).reshape([len(X) ** 2, 2])
         # compute fibre positions
         n_fibres_per_direction = int(
-            round(
-                self._L
-                / self._r_fibre_dist.r_avg
-                * np.sqrt(self._volume_fraction / np.pi)
-            )
+            round(1 / self._r_fibre_dist.r_avg * np.sqrt(self._volume_fraction / np.pi))
         )
         # fibre diameter
         d_fibre = 2 * self._r_fibre_dist.r_avg
-        X0 = (
-            np.arange(0, (n_fibres_per_direction - 0.5) * d_fibre, d_fibre)
-            * self._L
-            / (d_fibre * n_fibres_per_direction)
+        X0 = np.arange(0, (n_fibres_per_direction - 0.5) * d_fibre, d_fibre) / (
+            d_fibre * n_fibres_per_direction
         )
         self._fibre_locations = np.asarray(
             [p for p in itertools.product(X0, repeat=2)]
@@ -127,9 +118,7 @@ class FibreDistribution2d:
         """
         dist = np.empty(shape=(9, q.shape[0]))
         j = 0
-        for j, offset in enumerate(
-            itertools.product([-self._L, 0, +self._L], repeat=2)
-        ):
+        for j, offset in enumerate(itertools.product([-1, 0, +1], repeat=2)):
             dist[j, :] = np.sqrt(np.sum((p + np.asarray(offset) - q) ** 2, axis=1))
         return np.min(dist, axis=0)
 
@@ -163,9 +152,9 @@ class FibreDistribution2d:
                         )
                         for dim in range(2):
                             while p_j_new[dim] < 0:
-                                p_j_new[dim] += self._L
-                            while p_j_new[dim] > self._L:
-                                p_j_new[dim] -= self._L
+                                p_j_new[dim] += 1
+                            while p_j_new[dim] > 1:
+                                p_j_new[dim] -= 1
                         dist = (
                             self._dist_periodic(p_j_new, self._fibre_locations)
                             - r_j

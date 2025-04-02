@@ -8,25 +8,16 @@ import time
 import numpy as np
 from matplotlib import pyplot as plt
 
-from peds.diffusion_model_1d import DiffusionModel1d
-from peds.diffusion_model_2d import DiffusionModel2d
-from peds.distributions_lognormal import (
-    LogNormalDistribution1d,
-    LogNormalDistribution2d,
-)
-from peds.distributions_fibres import FibreDistribution2d
-from peds.quantity_of_interest import QoISampling1d, QoISampling2d
 from peds.datasets import PEDSDataset, SavedDataset
 from peds.peds_model import PEDSModel
-from peds.interpolation_1d import (
-    VertexToVolumeInterpolator1d,
-    VolumeToVertexInterpolator1d,
-)
-from peds.interpolation_2d import (
-    VertexToVolumeInterpolator2d,
-    VolumeToVertexInterpolator2d,
-)
 
+from common import (
+    get_distribution,
+    get_physics_model,
+    get_qoi,
+    get_downsampler,
+    get_coarse_model,
+)
 
 if len(sys.argv) < 2:
     print(f"Usage: python {sys.argv[0]} CONFIGFILE")
@@ -45,66 +36,24 @@ with open(config_file, "r", encoding="utf8") as f:
         print(line.strip())
 print()
 
-dim = config["model"]["dimension"]
-model_filename = config["model"]["filename"]
-n = config["discretisation"]["n"]
-scaling_factor = config["discretisation"]["scaling_factor"]
-n_samples_train = config["data"]["n_samples_train"]
-n_samples_valid = config["data"]["n_samples_valid"]
-n_samples_test = config["data"]["n_samples_test"]
-data_filename = config["data"]["filename"]
-batch_size = config["train"]["batch_size"]
-n_epoch = config["train"]["n_epoch"]
-sample_points = config["qoi"]["sample_points"]
-n_lowres = n // scaling_factor
-
-if dim == 1:
-    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-    f_rhs = torch.ones(size=(n,), dtype=torch.float)
-    if config["data"]["distribution"] == "log_normal":
-        distribution = LogNormalDistribution1d(
-            n, config["data"]["Lambda"], config["data"]["a_power"]
-        )
-    else:
-        raise RuntimeError("Only log-normal distribution supported in 1d")
-    DiffusionModel = DiffusionModel1d
-    QoISampling = QoISampling1d
-    VertexToVolumeInterpolator = VertexToVolumeInterpolator1d
-    VolumeToVertexInterpolator = VolumeToVertexInterpolator1d
-    AvgPool = torch.nn.AvgPool2d
-    flatten_idx = -1
-elif dim == 2:
-    device = "cpu"
-    f_rhs = torch.ones(size=(n, n), dtype=torch.float)
-    if config["data"]["distribution"] == "log_normal":
-        distribution = LogNormalDistribution2d(n, config["data"]["Lambda"])
-    elif config["data"]["distribution"] == "fibre":
-        distribution = FibreDistribution2d(
-            n,
-            config["data"]["n_fibres"],
-            config["data"]["d_fibre_min"],
-            config["data"]["d_fibre_max"],
-            config["data"]["kdiff_background"],
-            config["data"]["kdiff_fibre_min"],
-            config["data"]["kdiff_fibre_max"],
-        )
-    else:
-        raise RuntimeError(f"Unknown distribution: {config["data"]["distribution"]}")
-    DiffusionModel = DiffusionModel2d
-    QoISampling = QoISampling2d
-    VertexToVolumeInterpolator = VertexToVolumeInterpolator2d
-    VolumeToVertexInterpolator = VolumeToVertexInterpolator2d
-    AvgPool = torch.nn.AvgPool2d
-    flatten_idx = -2
-else:
-    raise RuntimeError(f"invalid dimension: {dim}")
+device = torch.device(
+    "cuda:0" if config["model"]["dimension"] and torch.cuda.is_available() else "cpu"
+)
 
 print(f"Running on device {device}")
 
-physics_model_highres = DiffusionModel(f_rhs)
-qoi = QoISampling(sample_points)
+distribution = get_distribution(config)
+physics_model_highres = get_physics_model(config)
+qoi = get_qoi(config)
+downsampler = get_downsampler(config)
 
+
+n_samples_train = config["data"]["n_samples_train"]
+n_samples_valid = config["data"]["n_samples_valid"]
+n_samples_test = config["data"]["n_samples_test"]
 n_samples = n_samples_train + n_samples_valid + n_samples_test
+
+data_filename = config["data"]["filename"]
 if not os.path.exists(data_filename):
     dataset = PEDSDataset(distribution, physics_model_highres, qoi)
     dataset.save(n_samples, data_filename)
@@ -121,40 +70,27 @@ test_dataset = list(
 
 test_dataloader = torch.utils.data.DataLoader(test_dataset, batch_size=n_samples_test)
 
-physics_model_lowres = physics_model_highres.coarsen(scaling_factor)
-
-downsampler = torch.nn.Sequential(
-    torch.nn.Unflatten(flatten_idx, (1, n + 1)),
-    VertexToVolumeInterpolator(),
-    AvgPool(1, stride=scaling_factor),
-    VolumeToVertexInterpolator(),
-    torch.nn.Flatten(flatten_idx - 1, flatten_idx),
+physics_model_lowres = physics_model_highres.coarsen(
+    config["discretisation"]["scaling_factor"]
 )
 
 
 model = PEDSModel(physics_model_lowres, downsampler, qoi)
-model.load(model_filename)
+model.load(config["model"]["filename"])
 
 n_param = sum([torch.numel(p) for p in model.parameters()])
 print(f"number of model parameters = {n_param}")
 
 model = model.to(device)
 
-sf = 2
+scaling_factor = 2
 coarse_model = dict()
-while sf <= scaling_factor:
-    coarse_model[sf] = torch.nn.Sequential(
-        torch.nn.Sequential(
-            torch.nn.Unflatten(flatten_idx, (1, n + 1)),
-            VertexToVolumeInterpolator(),
-            AvgPool(1, stride=sf),
-            VolumeToVertexInterpolator(),
-            torch.nn.Flatten(flatten_idx - 1, flatten_idx),
-        ),
-        physics_model_highres.coarsen(sf),
-        qoi,
+while scaling_factor <= config["discretisation"]["scaling_factor"]:
+    coarse_model[scaling_factor] = get_coarse_model(
+        physics_model_highres, scaling_factor, qoi
     )
-    sf *= 2
+    scaling_factor *= 2
+
 
 loss_fn = torch.nn.MSELoss()
 
@@ -168,10 +104,12 @@ for i, data in enumerate(test_dataloader):
     test_loss = loss.item()
     test_loss_avg += test_loss
     coarse_loss = dict()
-    for sf, cm in coarse_model.items():
+    for scaling_factor, cm in coarse_model.items():
         q_pred_coarse = cm(alpha)
-        coarse_loss[sf] = loss_fn(q_pred_coarse, q_target).detach().item()
-        print(f"coarse loss [{sf:d}x] = {coarse_loss[sf]:12.6f}")
+        coarse_loss[scaling_factor] = loss_fn(q_pred_coarse, q_target).detach().item()
+        print(
+            f"coarse loss [{scaling_factor:d}x] = {coarse_loss[scaling_factor]:12.6f}"
+        )
 
 data = next(iter(test_dataloader))
 alpha, q_target = data
@@ -193,12 +131,14 @@ for data in test_dataloader:
     t_finish = time.perf_counter()
     t_delta_fine = 1000 * (t_finish - t_start) / n_samples_test
     t_delta_coarse = dict()
-    for sf, cm in coarse_model.items():
+    for scaling_factor, cm in coarse_model.items():
         t_start = time.perf_counter()
         _ = cm(alpha)
         t_finish = time.perf_counter()
-        t_delta_coarse[sf] = 1000 * (t_finish - t_start) / n_samples_test
-        print(f"dt [coarse, {sf:d}] = {t_delta_coarse[sf]:8.4f} ms")
+        t_delta_coarse[scaling_factor] = 1000 * (t_finish - t_start) / n_samples_test
+        print(
+            f"dt [coarse, {scaling_factor:d}] = {t_delta_coarse[scaling_factor]:8.4f} ms"
+        )
 
 print(f"dt [PEDS]      = {t_delta_peds:8.4f} ms")
 print(f"dt [fine]     = {t_delta_fine:8.4f} ms")
@@ -242,9 +182,10 @@ plt.plot(
     label="highres",
 )
 
-for sf in sorted(t_delta_coarse.keys()):
+for scaling_factor in sorted(t_delta_coarse.keys()):
     plt.annotate(
-        f"   ${sf}\\times $", xy=(t_delta_coarse[sf], np.sqrt(coarse_loss[sf]))
+        f"   ${scaling_factor}\\times $",
+        xy=(t_delta_coarse[scaling_factor], np.sqrt(coarse_loss[scaling_factor])),
     )
 
 
