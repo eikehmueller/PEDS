@@ -190,9 +190,12 @@ sample_points = np.asanyarray(config["qoi"]["sample_points"])
 plt.clf()
 if config["model"]["dimension"] == 1:
     ax = plt.gca()
+    q_pred = q_pred.cpu().detach().numpy()
+    q_pred_coarse = q_pred_coarse.cpu().detach().numpy()
+    q_target = q_target.cpu().detach().numpy()
     plt.plot(
         sample_points,
-        np.mean(abs(q_pred - q_target) / q_target, axis=0),
+        np.mean(np.abs(q_pred - q_target) / q_target, axis=0),
         linewidth=2,
         marker="o",
         markersize=6,
