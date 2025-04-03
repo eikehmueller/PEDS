@@ -14,7 +14,7 @@ sample_points = [[0.790,0.356],[0.743,0.873],[0.456,0.914],[0.293,0.291],[0.123,
 # parameter for data generation
 [data]
 distribution = "lognormal" # distribution ("lognormal" or "fibre")
-n_samples_train = 32 # number of training samples
+n_samples_train = 2048 # number of training samples
 n_samples_valid = 32   # number of validation samples
 n_samples_test = 32    # number of test samples
 filename = "../data/data_2d_128x128_lognormal.npy"  # name of file with data
@@ -36,7 +36,7 @@ kdiff_fibre = 0.01     # diffusion coefficient in fibres
 
 # parameters for training algorithm
 [train]
-batch_size = 16     # batch size
-n_epoch = 4         # number of epochs
+batch_size = 64     # batch size
+n_epoch = 1024      # number of epochs
 lr_initial = 1.0e-2 # initial learning rate
 lr_final = 2.0e-3   # final learning rate
