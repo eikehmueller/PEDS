@@ -1,8 +1,18 @@
+"""Distributions that represent artificial distribution of fibres in the domain
+
+This module contains classes that allow to generate a distribution of fibres in 2D and
+a distribution of fibre radii. The distribution of fibre radii is a (clipped) normal distribution.
+
+Reference for the algorithm:
+    Yang Chen (2022): "Towards a data fusion framework: combining multi-modal data for composites
+    certification" Technical report, DETI-PoC2-003
+
+
+"""
+
 import itertools
 import numpy as np
 from scipy.stats import norm
-import matplotlib.patches as mpatches
-import matplotlib.pyplot as plt
 
 
 __all__ = ["FibreRadiusDistribution", "FibreDistribution2d"]
@@ -57,7 +67,7 @@ class FibreRadiusDistribution:
 class FibreDistribution2d:
     """Artificial distribution of fibres in the domain
 
-    Based on the Matlab code provided by Yang Chen.
+    Based on the Matlab code provided by Yang Chen, Fig. 15 in the above reference.
     """
 
     def __init__(
@@ -68,14 +78,14 @@ class FibreDistribution2d:
             r_avg=7.5e-3, r_min=5.0e-3, r_max=10.0e-3, sigma=0.5e-3, gaussian=True
         ),
         kdiff_background=1.0,
-        kdiff_fibre=0.01,
+        kdiff_fibre=0.1,
         seed=141517,
     ):
         """Initialise new instance
 
         :arg n: number of grid cells
         :arg volume_fraction: volume fraction of fibres
-        :arg r_fibre_dist: fibre radius distribution
+        :arg r_fibre_dist: fibre radius distribution, instance of class FibreRadiusDistribution
         :arg kdiff_background: diffusion coefficient in background
         :arg kdiff_fibre: diffusion coefficient in fibre
         :arg seed: seed of random number generator

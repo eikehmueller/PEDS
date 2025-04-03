@@ -1,3 +1,14 @@
+"""Lognormal distributions
+
+This module contains classes for generating lognormal distributions in 1D and 2D by using the link between
+Matern covariance functions and the solution of a stochastic partial differential equation (SPDE).
+
+Reference:
+    Lindgren, F., Rue, H. and Lindstroem, J., 2011. "An explicit link between Gaussian fields and Gaussian
+    Markov random fields: the stochastic partial differential equation approach." Journal of the Royal
+    Statistical Society Series B: Statistical Methodology, 73(4), pp.423-498.
+"""
+
 import numpy as np
 import scipy as sp
 import petsc4py
@@ -45,13 +56,6 @@ class LogNormalDistribution1d:
     the inverse correlation length and homogeneous Neumann BCs are
     assumed at the boundaries x=0, x=1. The generated field has Matern
     covariance with nu = a-d/2 where d=1 is the dimension.
-
-    Reference:
-      Lindgren, F., Rue, H. and Lindstroem, J., 2011. "An explicit link
-      between Gaussian fields and Gaussian Markov random fields:
-      the stochastic partial differential equation approach."
-      Journal of the Royal Statistical Society Series B: Statistical
-      Methodology, 73(4), pp.423-498.
     """
 
     def __init__(self, n, Lambda, a_power, seed=141517):
