@@ -1,5 +1,6 @@
 """Common setup routine for training and evaluation"""
 
+import sys
 import torch
 
 from peds.diffusion_model_1d import DiffusionModel1d
@@ -20,6 +21,7 @@ from peds.interpolation_2d import (
 )
 
 __all__ = [
+    "read_config",
     "get_distribution",
     "get_physics_model",
     "get_qoi",
@@ -27,6 +29,27 @@ __all__ = [
     "get_nn_model",
     "get_coarse_model",
 ]
+
+
+def read_config():
+    """Parse command line arguments and read configuration file"""
+    if len(sys.argv) < 2:
+        print(f"Usage: python {sys.argv[0]} CONFIGFILE")
+        sys.exit(0)
+
+    config_file = sys.argv[1]
+    print(f"reading parameters from {config_file}")
+
+    with open(config_file, "rb") as f:
+        config = tomllib.load(f)
+    print()
+    print(f"==== parameters ====")
+    print()
+    with open(config_file, "r") as f:
+        for line in f.readlines():
+            print(line.strip())
+    print()
+    return config
 
 
 def get_distribution(config):

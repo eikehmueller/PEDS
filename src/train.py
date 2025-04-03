@@ -1,13 +1,12 @@
 import itertools
 import os.path
-import sys
-import tomllib
 import torch
 from torch.utils.tensorboard import SummaryWriter
 
 from peds.datasets import PEDSDataset, SavedDataset
 from peds.peds_model import PEDSModel
 from common import (
+    read_config,
     get_distribution,
     get_physics_model,
     get_qoi,
@@ -15,23 +14,7 @@ from common import (
     get_nn_model,
 )
 
-if len(sys.argv) < 2:
-    print(f"Usage: python {sys.argv[0]} CONFIGFILE")
-    sys.exit(0)
-
-config_file = sys.argv[1]
-print(f"reading parameters from {config_file}")
-
-with open(config_file, "rb") as f:
-    config = tomllib.load(f)
-print()
-print(f"==== parameters ====")
-print()
-with open(config_file, "r") as f:
-    for line in f.readlines():
-        print(line.strip())
-print()
-
+config = read_config()
 
 device = torch.device(
     "cuda:0" if config["model"]["dimension"] and torch.cuda.is_available() else "cpu"
