@@ -69,7 +69,7 @@ coarse_model = torch.nn.Sequential(downsampler, physics_model_lowres, qoi)
 
 
 loss_fn = torch.nn.MSELoss()
-gamma = (config["train"]["lr_target"] / config["train"]["lr_initial"]) ** (
+gamma = (config["train"]["lr_final"] / config["train"]["lr_initial"]) ** (
     1 / config["train"]["n_epoch"]
 )
 print(f"learning rate decay factor = {gamma:8.5f}")
