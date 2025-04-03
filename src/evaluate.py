@@ -22,7 +22,7 @@ config = read_config()
 
 
 device = torch.device(
-    "cuda:0" if config["model"]["dimension"] and torch.cuda.is_available() else "cpu"
+    "cuda:0" if config["model"]["dimension"] == 1and torch.cuda.is_available() else "cpu"
 )
 
 print(f"Running on device {device}")

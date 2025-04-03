@@ -1,6 +1,7 @@
 """Common setup routine for training and evaluation"""
 
 import sys
+import tomllib
 import torch
 
 from peds.diffusion_model_1d import DiffusionModel1d
