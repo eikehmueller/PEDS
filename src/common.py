@@ -61,9 +61,11 @@ def get_distribution(config):
     n = config["discretisation"]["n"]
     dim = config["model"]["dimension"]
     if dim == 1:
-        if config["data"]["distribution"] == "log_normal":
+        if config["data"]["distribution"] == "lognormal":
             return LogNormalDistribution1d(
-                n, config["data"]["Lambda"], config["data"]["a_power"]
+                n,
+                config["distribution"]["lognormal"]["Lambda"],
+                config["distribution"]["lognormal"]["a_power"],
             )
         else:
             raise RuntimeError("Only log-normal distribution supported in 1d")
