@@ -10,7 +10,7 @@ from peds.datasets import PEDSDataset, SavedDataset
 from peds.peds_model import PEDSModel
 
 from common import (
-    read_config
+    read_config,
     get_distribution,
     get_physics_model,
     get_qoi,
@@ -22,7 +22,9 @@ config = read_config()
 
 
 device = torch.device(
-    "cuda:0" if config["model"]["dimension"] == 1and torch.cuda.is_available() else "cpu"
+    "cuda:0"
+    if config["model"]["dimension"] == 1 and torch.cuda.is_available()
+    else "cpu"
 )
 
 print(f"Running on device {device}")
@@ -184,9 +186,9 @@ plt.savefig("performance.pdf", bbox_inches="tight")
 # Visualise relative error
 
 colors = ["blue", "red", "black", "green", "orange"]
-sample_points = np.asanyarray(sample_points)
+sample_points = np.asanyarray(config["qoi"]["sample_points"])
 plt.clf()
-if dim == 1:
+if config["model"]["dimension"] == 1:
     ax = plt.gca()
     plt.plot(
         sample_points,
@@ -269,7 +271,7 @@ plt.legend(loc="upper left")
 plt.savefig("evaluation.pdf", bbox_inches="tight")
 
 # visualise solution
-if dim == 1:
+if config["model"]["dimension"] == 1:
     coarse_u_model = torch.nn.Sequential(downsampler, physics_model_lowres)
     u_pred = model.get_u(alpha).cpu().detach().numpy()
     u_pred_coarse = coarse_u_model(alpha).cpu().detach().numpy()

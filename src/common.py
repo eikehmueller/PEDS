@@ -1,4 +1,4 @@
-"""Common setup routine for training and evaluation"""
+"""Common setup routines for training and evaluation"""
 
 import sys
 import tomllib
