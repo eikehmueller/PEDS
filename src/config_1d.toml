@@ -2,7 +2,7 @@ title = "PEDS configuration file"
 
 [model]
 dimension = 1          # dimension of problem
-filename = "model_1d.pth"
+filename = "../data/model_1d_256_lognormal.pth"
 
 [discretisation]
 n = 256            # number of grid cells
@@ -12,12 +12,17 @@ scaling_factor = 8 # ratio between fine and coarse grid cells
 sample_points = [0.1, 0.3, 0.5, 0.7, 0.9] # sample points
 
 [data]
-Lambda = 0.02             # correlation length
-a_power = 2               # power in log-normal distribution
+distribution = "lognormal" # distribution (must be "lognormal" in 1d)
 n_samples_train = 2048    # number of training samples
 n_samples_valid = 32      # number of validation samples
 n_samples_test = 32       # number of test samples
-filename = "data_1d.npy"  # name of file with data
+filename = "../data/data_1d_256_lognormal.npy"  # name of file with data
+
+# parameters of log-normal distribution
+[distribution.lognormal]                            
+Lambda = 0.1           # correlation length for log-normal distribution
+a_power = 2               # power in log-normal distribution
+
 
 [train]
 batch_size = 64     # batch size
