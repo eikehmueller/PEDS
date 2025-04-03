@@ -6,7 +6,7 @@ filename = "../data/model_1d_256_lognormal.pth"
 
 [discretisation]
 n = 256            # number of grid cells
-scaling_factor = 8 # ratio between fine and coarse grid cells
+scaling_factor = 16 # ratio between fine and coarse grid cells
 
 [qoi]
 sample_points = [0.1, 0.3, 0.5, 0.7, 0.9] # sample points
