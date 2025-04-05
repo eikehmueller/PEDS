@@ -294,14 +294,25 @@ if __name__ == "__main__":
     )
 
     for key, value in rmse_error.items():
-        print(f"rmse error [{key:16}] = {value:.4e}")
+        if key == "coarse":
+            for scaling_factor, value in value.items():
+                print(f"rmse error [{key:16s} {scaling_factor:2d}x] = {value:8.4e}")
+        else:
+            print(f"rmse error [{key:16s}] = {value:8.4e}")
+        print(f"rmse error [{key:16s}] = {value:8.4e}")
 
     time_per_sample = measure_performance(
         test_dataset, model, physics_model_highres, scaling_factor, device
     )
 
     for key, value in time_per_sample.items():
-        print(f"t/sample [{key:16}] = {1000*value:.4e} ms")
+        if key == "coarse":
+            for scaling_factor, value in value.items():
+                print(
+                    f"t/sample [{key:16s} {scaling_factor:2d}x] = {1000*value:8.4e} ms"
+                )
+        else:
+            print(f"t/sample [{key:16s}] = {1000*value:8.4e} ms")
 
     visualise_performance(rmse_error, time_per_sample, "performance.pdf")
 
