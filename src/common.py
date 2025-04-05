@@ -2,8 +2,10 @@
 
 import sys
 import tomllib
+import itertools
 import torch
 
+from peds.datasets import SavedDataset
 from peds.diffusion_model_1d import DiffusionModel1d
 from peds.diffusion_model_2d import DiffusionModel2d
 from peds.distributions_lognormal import (
@@ -29,6 +31,7 @@ __all__ = [
     "get_downsampler",
     "get_nn_model",
     "get_coarse_model",
+    "get_datasets",
 ]
 
 
@@ -44,9 +47,9 @@ def read_config():
     with open(config_file, "rb") as f:
         config = tomllib.load(f)
     print()
-    print(f"==== parameters ====")
+    print("==== parameters ====")
     print()
-    with open(config_file, "r") as f:
+    with open(config_file, "r", encoding="utf8") as f:
         for line in f.readlines():
             print(line.strip())
     print()
@@ -239,3 +242,33 @@ def get_coarse_model(physics_model_highres, scaling_factor, qoi):
         )
     else:
         raise RuntimeError(f"invalid dimension: {dim}")
+
+
+def get_datasets(config):
+    """Return the training, validation and test datasets
+
+    The datasets are created from the saved dataset file.
+
+    :arg config: configuration dictionary
+    """
+    n_samples_train = config["data"]["n_samples_train"]
+    n_samples_valid = config["data"]["n_samples_valid"]
+    n_samples_test = config["data"]["n_samples_test"]
+    n_samples = n_samples_train + n_samples_valid + n_samples_test
+
+    data_filename = config["data"]["filename"]
+    dataset = SavedDataset(data_filename)
+    assert len(dataset) == n_samples
+
+    train_dataset = list(itertools.islice(dataset, 0, n_samples_train))
+    valid_dataset = list(
+        itertools.islice(dataset, n_samples_train, n_samples_train + n_samples_valid)
+    )
+    test_dataset = list(
+        itertools.islice(
+            dataset,
+            n_samples_train + n_samples_valid,
+            n_samples_train + n_samples_valid + n_samples_test,
+        )
+    )
+    return train_dataset, valid_dataset, test_dataset

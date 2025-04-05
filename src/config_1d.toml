@@ -26,6 +26,6 @@ a_power = 2               # power in log-normal distribution
 
 [train]
 batch_size = 64     # batch size
-n_epoch = 512       # number of epochs
+n_epoch = 16       # number of epochs
 lr_initial = 1.0e-2 # initial learning rate
 lr_final = 1.0e-3   # final learning rate
