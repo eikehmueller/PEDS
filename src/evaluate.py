@@ -9,7 +9,7 @@ from matplotlib import pyplot as plt
 
 from peds.peds_model import PEDSModel
 
-from common import (
+from setup import (
     read_config,
     get_distribution,
     get_physics_model,

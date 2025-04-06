@@ -4,7 +4,7 @@ from torch.utils.tensorboard import SummaryWriter
 
 from peds.datasets import PEDSDataset
 from peds.peds_model import PEDSModel
-from common import (
+from setup import (
     read_config,
     get_distribution,
     get_physics_model,
