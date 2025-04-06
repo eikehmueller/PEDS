@@ -35,12 +35,13 @@ class PEDSModel(torch.nn.Module):
 
         :arg device: device to move to
         """
-        new_self = super().to(device)
-        new_self._physics_model = self._physics_model.to(device)
-        new_self._downsampler = self._downsampler.to(device)
-        new_self._nn_model = self._nn_model.to(device)
-        new_self.w = self.w.to(device)
-        return new_self
+        super().to(device)
+        self._physics_model.to(device),
+        self._downsampler.to(device),
+        self._qoi.to(device),
+        self._nn_model.to(device),
+        self.w = self.w.to(device)
+        return self
 
     def forward(self, x):
         """Evaluate model"""

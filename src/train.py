@@ -61,7 +61,7 @@ if __name__ == "__main__":
     n_param = sum([torch.numel(p) for p in model.parameters()])
     print(f"number of model parameters = {n_param}")
 
-    model = model.to(device)
+    model.to(device)
     coarse_model = torch.nn.Sequential(downsampler, physics_model_lowres, qoi)
 
     loss_fn = torch.nn.MSELoss()
@@ -110,5 +110,5 @@ if __name__ == "__main__":
         scheduler.step()
 
     writer.flush()
-
+    model.to("cpu")
     model.save(config["model"]["filename"])

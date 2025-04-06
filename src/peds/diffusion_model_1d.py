@@ -147,9 +147,9 @@ class DiffusionModel1d(torch.nn.Module):
 
         :arg device: device to move to
         """
-        new_self = super().to(device)
-        new_self.metadata = dict(f_rhs=self.metadata["f_rhs"].to(device))
-        return new_self
+        super().to(device)
+        self.metadata = dict(f_rhs=self.metadata["f_rhs"].to(device))
+        return self
 
     def coarsen(self, scaling_factor):
         """Return a coarsened version of the model

@@ -314,11 +314,11 @@ class DiffusionModel2d(torch.nn.Module):
 
         :arg device: device to move to
         """
-        new_self = super().to(device)
-        new_self.metadata = dict(
+        super().to(device)
+        self.metadata = dict(
             solver=self.metadata["solver"], f_rhs=self.metadata["f_rhs"].to(device)
         )
-        return new_self
+        return self
 
     def forward(self, x):
         """Apply model

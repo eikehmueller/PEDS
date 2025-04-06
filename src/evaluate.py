@@ -2,6 +2,7 @@
 
 import torch
 import time
+import copy
 
 import numpy as np
 from matplotlib import pyplot as plt
@@ -65,24 +66,31 @@ def measure_performance(
     :arg scaling_factor: scaling factor for the coarsest model
     :arg device: device to run on
     """
+    physics_model_highres_device = copy.deepcopy(physics_model_highres)
+    physics_model_highres_device.to(device)
     n_samples = len(dataset)
     dataloader = torch.utils.data.DataLoader(dataset, batch_size=n_samples)
     sfs = 2 ** (1 + np.arange(int(np.log2(scaling_factor))))
-    coarse_model = {sf: get_coarse_model(physics_model_highres, sf, qoi) for sf in sfs}
+    coarse_model_device = {
+        sf: get_coarse_model(physics_model_highres_device, sf, qoi).to(device)
+        for sf in sfs
+    }
     time_per_sample = dict()
     alpha, _ = next(iter(dataloader))
-    peds_model = peds_model.to(device)
+    peds_model_device = copy.deepcopy(peds_model)
+    peds_model_device.to(device)
+
     alpha = alpha.to(device)
     t_start = time.perf_counter()
-    _ = peds_model(alpha)
+    _ = peds_model_device(alpha)
     t_finish = time.perf_counter()
     time_per_sample["peds"] = (t_finish - t_start) / n_samples
     t_start = time.perf_counter()
-    _ = physics_model_highres(alpha)
+    _ = physics_model_highres_device(alpha)
     t_finish = time.perf_counter()
     time_per_sample["fine"] = (t_finish - t_start) / n_samples
     time_per_sample["coarse"] = dict()
-    for sf, cm in coarse_model.items():
+    for sf, cm in coarse_model_device.items():
         t_start = time.perf_counter()
         _ = cm(alpha)
         t_finish = time.perf_counter()
@@ -112,7 +120,7 @@ def visualise_performance(rmse_error, time_per_sample, filename):
     )
     sfs = sorted(rmse_error["coarse"].keys())
     plt.plot(
-        [time_per_sample[f"coarse_{sf}x"] for sf in sfs],
+        [time_per_sample["coarse"][sf] for sf in sfs],
         [rmse_error["coarse"][sf] for sf in sfs],
         linewidth=2,
         color="blue",
@@ -167,7 +175,9 @@ def visualise_error(peds_model, coarse_model, dataset, sample_points, filename):
     dataloader = torch.utils.data.DataLoader(dataset, batch_size=len(dataset))
     alpha, q_target = next(iter(dataloader))
     q_pred_peds = peds_model(alpha).detach().numpy()
+
     q_pred_coarse = coarse_model(alpha).detach().numpy()
+    q_target = q_target.detach().numpy()
     rmse_coarse = np.sqrt(np.mean((q_pred_coarse - q_target) ** 2, axis=0))
     rmse_peds = np.sqrt(np.mean((q_pred_peds - q_target) ** 2, axis=0))
 
@@ -262,6 +272,7 @@ if __name__ == "__main__":
         if config["model"]["dimension"] == 1 and torch.cuda.is_available()
         else "cpu"
     )
+    # device = "cpu"
 
     print(f"Running on device {device}")
 
@@ -293,26 +304,29 @@ if __name__ == "__main__":
         scaling_factor,
     )
 
+    print()
+    print("==== error ====")
     for key, value in rmse_error.items():
         if key == "coarse":
             for scaling_factor, value in value.items():
-                print(f"rmse error [{key:16s} {scaling_factor:2d}x] = {value:8.4e}")
+                print(f"  rmse error [coarse {scaling_factor:2d}x] = {value:8.4e}")
         else:
-            print(f"rmse error [{key:16s}] = {value:8.4e}")
-        print(f"rmse error [{key:16s}] = {value:8.4e}")
+            print(f"  rmse error [{key:10s}] = {value:8.4e}")
 
     time_per_sample = measure_performance(
         test_dataset, model, physics_model_highres, scaling_factor, device
     )
-
+    print()
+    print("==== performance ====")
     for key, value in time_per_sample.items():
         if key == "coarse":
             for scaling_factor, value in value.items():
                 print(
-                    f"t/sample [{key:16s} {scaling_factor:2d}x] = {1000*value:8.4e} ms"
+                    f"  time per sample [coarse {scaling_factor:2d}x] = {1000*value:8.4e} ms"
                 )
         else:
-            print(f"t/sample [{key:16s}] = {1000*value:8.4e} ms")
+            print(f"  time per sample [{key:10s}] = {1000*value:8.4e} ms")
+    print()
 
     visualise_performance(rmse_error, time_per_sample, "performance.pdf")
 

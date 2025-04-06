@@ -45,7 +45,7 @@ class VolumeToVertexInterpolator1d(torch.nn.Module):
 
     def forward(self, x):
         """Forward evaluation"""
-        y = torch.empty(size=x.shape[:-1] + (x.shape[-1] + 1,))
+        y = torch.empty(size=x.shape[:-1] + (x.shape[-1] + 1,), device=x.device)
         y[..., 0] = x[..., 0]
         y[..., 1:-1] = 0.5 * (x[..., :-1] + x[..., 1:])
         y[..., -1] = x[..., -1]
