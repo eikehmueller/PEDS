@@ -232,7 +232,7 @@ def visualise_error(rms_error, sample_points, filename):
             ax.text(
                 sample_points[j, 0] + 0.125 * rms_error["coarse"][scaling_factor][j],
                 sample_points[j, 1],
-                f"{100*rms_error["coarse"][scaling_factor][j]:6.1f}%",
+                f"{rms_error["coarse"][scaling_factor][j]:6.4f}",
                 color="red",
                 verticalalignment="top",
                 size="small",
@@ -240,7 +240,7 @@ def visualise_error(rms_error, sample_points, filename):
             ax.text(
                 sample_points[j, 0] + 0.125 * rms_error["coarse"][scaling_factor][j],
                 sample_points[j, 1],
-                f"{100*rms_error["peds"][j]:6.1f}%",
+                f"{rms_error["peds"][j]:6.4f}",
                 verticalalignment="bottom",
                 color="blue",
                 size="small",
