@@ -76,8 +76,14 @@ def measure_performance(
     :arg scaling_factor: scaling factor for the coarsest model
     :arg device: device to run on
     """
-    physics_model_highres_device = copy.deepcopy(physics_model_highres)
-    physics_model_highres_device.to(device)
+    if device == next(peds_model.parameters()).device:
+        physics_model_highres_device = physics_model_highres
+        peds_model_device = peds_model
+    else:
+        physics_model_highres_device = copy.deepcopy(physics_model_highres)
+        physics_model_highres_device.to(device)
+        peds_model_device = copy.deepcopy(peds_model)
+        peds_model_device.to(device)
     n_samples = len(dataset)
     dataloader = torch.utils.data.DataLoader(dataset, batch_size=n_samples)
     sfs = 2 ** (1 + np.arange(int(np.log2(scaling_factor))))
@@ -87,8 +93,6 @@ def measure_performance(
     }
     time_per_sample = dict()
     alpha, _ = next(iter(dataloader))
-    peds_model_device = copy.deepcopy(peds_model)
-    peds_model_device.to(device)
 
     alpha = alpha.to(device)
     t_start = time.perf_counter()
