@@ -59,7 +59,10 @@ def read_config():
 def get_distribution(config):
     """Initialise the distribution based on configuration
 
-    Returns distribution object that can be used to generate samples
+    Returns distribution object that can be used to generate samples for the logarithm of
+    the diffusion coefficient.
+
+    :arg config: configuration dictionary
     """
     n = config["discretisation"]["n"]
     dim = config["model"]["dimension"]
@@ -100,6 +103,8 @@ def get_physics_model(config):
     """Construct the high-resolution physics model based on the configuration
 
     Returns physics model
+
+    :arg config: configuration dictionary
     """
     n = config["discretisation"]["n"]
     dim = config["model"]["dimension"]
@@ -131,6 +136,8 @@ def get_downsampler(config):
     """Initialise the downsampler based on the configuration
 
     Returns downsampler object that can be used to downsample the high-resolution field
+
+    :arg config: configuration dictionary
     """
     n = config["discretisation"]["n"]
     dim = config["model"]["dimension"]
@@ -158,7 +165,9 @@ def get_downsampler(config):
 def get_nn_model(config):
     """Initialise the NN model based on the configuration
 
-    Returns nn model object
+    Returns neural network model object
+
+    :arg config: configuration dictionary
     """
     n = config["discretisation"]["n"]
     if config["model"]["dimension"] == 1:
@@ -216,6 +225,10 @@ def get_coarse_model(physics_model_highres, scaling_factor, qoi):
 
     This model coarsens the diffusion coefficient and then applies a low-resolution
     physics model on which the quantity of interest is evaluated
+
+    :arg physics_model_highres: high-resolution physics model
+    :arg scaling_factor: scaling factor for the coarsening
+    :arg qoi: quantity of interest object
     """
     f_rhs = physics_model_highres.metadata["f_rhs"]
     n = f_rhs.shape[-1]
