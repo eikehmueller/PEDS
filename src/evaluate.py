@@ -25,10 +25,10 @@ def measure_error(
 ):
     """Measure loss values of different models
 
-    Meausure the loss function for the PEDS model, the high-fidelity physics model
+    Measure the loss function for the PEDS model, the high-fidelity physics model
     and coarsened versions of the physics model.
 
-    Returns a dictonary with the error values for each model.
+    Returns a dictionary with the error values for each model.
 
     :arg dataset: dataset to use for the loss calculation
     :arg peds_model: PEDS model
