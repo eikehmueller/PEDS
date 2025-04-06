@@ -1,8 +1,8 @@
 """Script for evaluating and visualising the performance of the PEDS model"""
 
-import torch
 import time
 import copy
+import torch
 
 import numpy as np
 from matplotlib import pyplot as plt
