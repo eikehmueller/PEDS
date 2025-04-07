@@ -36,6 +36,14 @@ class FibreRadiusDistribution:
         self.sigma = sigma
         self.gaussian = gaussian
         self._rng = np.random.default_rng(seed=seed)
+        # number of nodal points for the CDF
+        n_points = 1000
+        nodal_points = np.linspace(self.r_min, self.r_max, num=n_points)
+        pdf = norm.pdf(nodal_points, loc=self.r_avg, scale=self.sigma)
+
+        self._cdf = np.cumsum(pdf)
+        self._cdf /= self._cdf[-1]
+        self._x_cdf = np.linspace(0, 1, n_points)
 
     def draw(self, n_samples):
         """Draw given number of samples from distribution
@@ -48,17 +56,12 @@ class FibreRadiusDistribution:
         """
 
         if self.gaussian:
-            # number of nodal points for the CDF
-            n_points = 1000
-            nodal_points = np.linspace(self.r_min, self.r_max, num=n_points)
-            pdf = norm.pdf(nodal_points, loc=self.r_avg, scale=self.sigma)
-
-            cdf = np.cumsum(pdf)
-            cdf /= cdf[-1]
-            x = np.linspace(0, 1, n_points)
             # use inverse sampling transform
             xi = self._rng.uniform(low=0, high=1, size=n_samples)
-            r_fibre = np.interp(xi, cdf, x) * (self.r_max - self.r_min) + self.r_min
+            r_fibre = (
+                np.interp(xi, self._cdf, self._x_cdf) * (self.r_max - self.r_min)
+                + self.r_min
+            )
         else:
             r_fibre = np.ones(shape=(n_samples,)) * self.r_avg
         return r_fibre
