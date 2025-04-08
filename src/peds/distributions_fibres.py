@@ -10,6 +10,11 @@ Reference for the algorithm:
 
 """
 
+import os
+import tempfile
+import ctypes
+import subprocess
+
 import itertools
 import numpy as np
 from scipy.stats import norm
@@ -83,6 +88,7 @@ class FibreDistribution2d:
         kdiff_background=1.0,
         kdiff_fibre=0.1,
         seed=141517,
+        fast_code=True,
     ):
         """Initialise new instance
 
@@ -92,6 +98,7 @@ class FibreDistribution2d:
         :arg kdiff_background: diffusion coefficient in background
         :arg kdiff_fibre: diffusion coefficient in fibre
         :arg seed: seed of random number generator
+        :arg fast_code: use generated C code
         """
         self.n = n
         self._volume_fraction = volume_fraction
@@ -105,7 +112,7 @@ class FibreDistribution2d:
         self._vertices = np.asarray(
             [(y, x) for (x, y) in itertools.product(X, repeat=2)]
         ).reshape([len(X) ** 2, 2])
-        # compute fibre positions
+        # compute initial fibre locations, arranged in a regular grid
         n_fibres_per_direction = int(
             round(1 / self._r_fibre_dist.r_avg * np.sqrt(self._volume_fraction / np.pi))
         )
@@ -114,9 +121,162 @@ class FibreDistribution2d:
         X0 = np.arange(0, (n_fibres_per_direction - 0.5) * d_fibre, d_fibre) / (
             d_fibre * n_fibres_per_direction
         )
-        self._fibre_locations = np.asarray(
+        self._initial_fibre_locations = np.asarray(
             [p for p in itertools.product(X0, repeat=2)]
         ).reshape([len(X0) ** 2, 2])
+        self._fast_code = fast_code
+        if self._fast_code:
+            lib_path, _ = os.path.split(os.path.realpath(__file__))
+            source_file = os.path.join(lib_path, "libfibres.cc")
+            with tempfile.TemporaryDirectory() as tmp_dir:
+                lib_file = os.path.join(tmp_dir, "libfibres.so")
+                try:
+                    subprocess.run(
+                        ["g++", "-fPIC", "-shared", "-O3", "-o", lib_file, source_file],
+                        check=True,
+                    )
+                except subprocess.CalledProcessError as e:
+                    print("Error compiling C++ code for fibre distribution: " + str(e))
+                    print("Falling back to Python implementation.")
+                    self._fast_code = False
+                if self._fast_code:
+                    # Load the shared library
+                    self._fast_dist_periodic = ctypes.CDLL(lib_file).dist_periodic
+                    self._fast_dist_periodic.argtypes = [
+                        ctypes.c_int,
+                        np.ctypeslib.ndpointer(ctypes.c_double, flags="C_CONTIGUOUS"),
+                        np.ctypeslib.ndpointer(ctypes.c_double, flags="C_CONTIGUOUS"),
+                        np.ctypeslib.ndpointer(ctypes.c_double, flags="C_CONTIGUOUS"),
+                        np.ctypeslib.ndpointer(ctypes.c_double, flags="C_CONTIGUOUS"),
+                    ]
+
+                    initialise_rng = ctypes.CDLL(lib_file).initialise_rng
+                    initialise_rng.argtypes = [
+                        ctypes.c_uint,
+                        ctypes.POINTER(ctypes.c_uint),
+                        ctypes.c_char_p,
+                    ]
+
+                    self._fast_move_fibres = ctypes.CDLL(lib_file).move_fibres
+                    self._fast_move_fibres.argtypes = [
+                        ctypes.c_uint,
+                        np.ctypeslib.ndpointer(ctypes.c_double, flags="C_CONTIGUOUS"),
+                        np.ctypeslib.ndpointer(ctypes.c_double, flags="C_CONTIGUOUS"),
+                        ctypes.c_uint,
+                        ctypes.c_double,
+                        ctypes.c_uint,
+                        ctypes.POINTER(ctypes.c_uint),
+                        ctypes.c_char_p,
+                    ]
+
+                    seed = 735283
+                    self._rng_state_length = ctypes.c_uint()
+                    self._rng_state = ctypes.c_char_p()
+                    self._rng_state.value = 10000 * b" "
+
+                    initialise_rng(
+                        seed, ctypes.byref(self._rng_state_length), self._rng_state
+                    )
+
+    def __iter__(self):
+        """Iterator over dataset"""
+        num_repeats = 30
+        it_max_ovlap = 5000
+        eps_fibres = 0.0015
+        while True:
+            r_fibres = self._r_fibre_dist.draw(self._initial_fibre_locations.shape[0])
+            fibre_locations = np.array(self._initial_fibre_locations)
+            if self._fast_code:
+                n_fibres = r_fibres.shape[0]
+                self._fast_move_fibres(
+                    n_fibres,
+                    r_fibres,
+                    fibre_locations,
+                    num_repeats,
+                    eps_fibres,
+                    it_max_ovlap,
+                    self._rng_state_length,
+                    self._rng_state,
+                )
+            else:
+                fibre_locations = self._move_fibres(
+                    fibre_locations,
+                    r_fibres,
+                    num_repeats=30,
+                    it_max_ovlap=5000,
+                    eps_fibres=0.0015,
+                )
+            # Project onto grid
+            alpha = np.log(self._kdiff_background) * np.ones(
+                shape=((self.n + 1) * (self.n + 1))
+            )
+            for p, r in zip(fibre_locations, r_fibres):
+                dist = self._dist_periodic(p, self._vertices)
+                alpha[np.where(dist < r)] = np.log(self._kdiff_fibre)
+            alpha = np.reshape(alpha, (self.n + 1, self.n + 1))
+            yield alpha
+
+    def _move_fibres(
+        self,
+        fibre_locations,
+        r_fibres,
+        num_repeats=30,
+        it_max_ovlap=5000,
+        eps_fibres=0.0015,
+    ):
+        """Randomly move the fibres according to the algorithm by Yang Chen
+
+        Returns the new fibre locations.
+
+        :arg initial_fibre_locations: initial locations of the fibres
+        :arg r_fibres: fibre radii
+        :arg num_repeats: number of repetitions
+        :arg it_max_ovlap: maximum number of iterations to resolve overlap
+        :arg eps_fibres: minimum distance between fibres
+        """
+        n_fibres = r_fibres.shape[0]
+        labels = self._rng.permutation(range(n_fibres))
+        overlap = True
+        k = 0
+        while overlap or k < num_repeats:
+            overlap = False
+            for j in range(n_fibres):
+                # loop over fibres
+                p_j = fibre_locations[labels[j], :]
+                r_j = r_fibres[labels[j]]
+                dist = self._dist_periodic(p_j, fibre_locations)
+                dist[labels[j]] = np.inf
+                ur_sc = np.mean(sorted(dist)[:3])
+
+                dimin = 0
+                counter = 0
+                n_ovlap0 = np.inf
+                while dimin < eps_fibres:
+                    u_r = self._rng.uniform(low=0, high=ur_sc)
+                    u_theta = self._rng.uniform(low=0, high=2 * np.pi)
+                    p_j_new = p_j + u_r * np.asarray([np.cos(u_theta), np.sin(u_theta)])
+                    for dim in range(2):
+                        while p_j_new[dim] < 0:
+                            p_j_new[dim] += 1
+                        while p_j_new[dim] > 1:
+                            p_j_new[dim] -= 1
+                    dist = (
+                        self._dist_periodic(p_j_new, fibre_locations) - r_j - r_fibres
+                    )
+                    dist[labels[j]] = np.inf
+                    dimin = np.min(dist)
+                    n_ovlap1 = np.count_nonzero(dist < 0)
+                    if n_ovlap1 < n_ovlap0:
+                        p_j_leastworst = p_j_new
+                        n_ovlap0 = n_ovlap1
+                    counter += 1
+                    if counter > it_max_ovlap:
+                        p_j_new = p_j_leastworst
+                        overlap = True
+                        break
+                fibre_locations[labels[j], :] = p_j_new[:]
+            k += 1
+        return fibre_locations
 
     def _dist_periodic(self, p, q):
         """Compute periodic distance between point p and array of points q
@@ -129,69 +289,16 @@ class FibreDistribution2d:
         :arg p: point in 2d, shape = (2,)
         :arg q: array of points in 2d, shape = (n, 2)
         """
-        dist = np.empty(shape=(9, q.shape[0]))
-        j = 0
-        for j, offset in enumerate(itertools.product([-1, 0, +1], repeat=2)):
-            dist[j, :] = np.sqrt(np.sum((p + np.asarray(offset) - q) ** 2, axis=1))
-        return np.min(dist, axis=0)
 
-    def __iter__(self):
-        """Iterator over dataset"""
-        while True:
-            r_fibres = self._r_fibre_dist.draw(self._fibre_locations.shape[0])
-            n_fibres = r_fibres.shape[0]
-            labels = self._rng.permutation(range(n_fibres))
-            eps_fibres = 0.0015
-            it_max_ovlap = 5e3
-            num_repeats = 30
-            for _ in range(num_repeats):
-                tag_ovlap = 0
-                for j in range(n_fibres):
-                    # loop over fibres
-                    p_j = self._fibre_locations[labels[j], :]
-                    r_j = r_fibres[labels[j]]
-                    dist = self._dist_periodic(p_j, self._fibre_locations)
-                    dist[labels[j]] = np.inf
-                    ur_sc = np.mean(sorted(dist)[:3])
-
-                    dimin = 0
-                    counter = 0
-                    n_ovlap0 = np.inf
-                    while dimin < eps_fibres:
-                        u_r = self._rng.uniform(low=0, high=ur_sc)
-                        u_theta = self._rng.uniform(low=0, high=2 * np.pi)
-                        p_j_new = p_j + u_r * np.asarray(
-                            [np.cos(u_theta), np.sin(u_theta)]
-                        )
-                        for dim in range(2):
-                            while p_j_new[dim] < 0:
-                                p_j_new[dim] += 1
-                            while p_j_new[dim] > 1:
-                                p_j_new[dim] -= 1
-                        dist = (
-                            self._dist_periodic(p_j_new, self._fibre_locations)
-                            - r_j
-                            - r_fibres
-                        )
-                        dist[labels[j]] = np.inf
-                        dimin = np.min(dist)
-                        n_ovlap1 = np.count_nonzero(dist < 0)
-                        if n_ovlap1 < n_ovlap0:
-                            p_j_leastworst = p_j_new
-                            n_ovlap0 = n_ovlap1
-                        counter += 1
-                        if counter > it_max_ovlap:
-                            p_j_new = p_j_leastworst
-                            tag_ovlap = tag_ovlap + 1
-                            break
-                    self._fibre_locations[labels[j], :] = p_j_new[:]
-                if tag_ovlap == 0:
-                    break
-            alpha = np.log(self._kdiff_background) * np.ones(
-                shape=((self.n + 1) * (self.n + 1))
-            )
-            for p, r in zip(self._fibre_locations, r_fibres):
-                dist = self._dist_periodic(p, self._vertices)
-                alpha[np.where(dist < r)] = np.log(self._kdiff_fibre)
-            alpha = np.reshape(alpha, (self.n + 1, self.n + 1))
-            yield alpha
+        n = q.shape[0]
+        if self._fast_code:
+            min_dist = np.empty(n, dtype=np.float64)
+            extents = np.asarray([1.0, 1.0], dtype=np.float64)
+            self._fast_dist_periodic(n, p, q, extents, min_dist)
+            return min_dist
+        else:
+            j = 0
+            dist = np.empty(shape=(9, n))
+            for j, offset in enumerate(itertools.product([-1, 0, +1], repeat=2)):
+                dist[j, :] = np.sqrt(np.sum((p + np.asarray(offset) - q) ** 2, axis=1))
+            return np.min(dist, axis=0)

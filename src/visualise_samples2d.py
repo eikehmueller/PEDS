@@ -36,6 +36,7 @@ else:
         r_fibre_dist=FibreRadiusDistribution(
             r_avg=0.0375, r_min=0.025, r_max=0.05, sigma=0.0025, gaussian=True
         ),
+        fast_code=True,
     )
 
 samples = [sample for sample in list(itertools.islice(distribution, args.nsamples))]
