@@ -142,7 +142,7 @@ void move_fibres(const unsigned int n_fibres, const double *r_fibres,
         unsigned int n_ovlap1 = 0;
         dist[labels[j]] = L[0] + L[1];
         for (unsigned int j = 0; j < n_fibres; ++j) {
-          dist[j] -= r_j - r_fibres[j];
+          dist[j] -= r_j + r_fibres[j];
           n_ovlap1 += (dist[j] < 0);
         }
 
