@@ -22,11 +22,12 @@ def rng():
 def test_tridiagonal_solve_1d(rng):
     """Check that tridiagonal solve works for 1d tensors"""
     n = 32
+    L = 0.7
     u_exact = torch.rand(n, generator=rng)
     alpha = torch.rand(n + 1, generator=rng)
     K_diff = torch.exp(alpha)
-    f_rhs = tridiagonal_apply(K_diff, u_exact)
-    u = tridiagonal_solve(K_diff, f_rhs)
+    f_rhs = tridiagonal_apply(K_diff, L, u_exact)
+    u = tridiagonal_solve(K_diff, L, f_rhs)
     error = (torch.norm(u - u_exact) / torch.norm(u_exact)).detach().numpy()
     tolerance = 1.0e-12
     assert error < tolerance
@@ -37,11 +38,12 @@ def test_tridiagonal_solve_batched(rng):
     n = 32
     batchsize = 8
     m = 4
+    L = 0.7
     u_exact = torch.rand((batchsize, m, n), generator=rng)
     alpha = torch.rand((batchsize, m, n + 1), generator=rng)
     K_diff = torch.exp(alpha)
-    f_rhs = tridiagonal_apply(K_diff, u_exact)
-    u = tridiagonal_solve(K_diff, f_rhs)
+    f_rhs = tridiagonal_apply(K_diff, L, u_exact)
+    u = tridiagonal_solve(K_diff, L, f_rhs)
     error = (torch.norm(u - u_exact) / torch.norm(u_exact)).detach().numpy()
     tolerance = 1.0e-12
     assert error < tolerance
@@ -52,11 +54,12 @@ def test_tridiagonal_solve_broadcast(rng):
     n = 32
     batchsize = 8
     m = 4
+    L = 0.7
     f_rhs = torch.rand(n, generator=rng)
     alpha = torch.rand((batchsize, m, n + 1), generator=rng)
     K_diff = torch.exp(alpha)
-    u = tridiagonal_solve(K_diff, f_rhs)
-    Au = tridiagonal_apply(K_diff, u)
+    u = tridiagonal_solve(K_diff, L, f_rhs)
+    Au = tridiagonal_apply(K_diff, L, u)
     error = (torch.norm(Au - f_rhs) / torch.norm(f_rhs)).detach().numpy()
     tolerance = 1.0e-12
     assert error < tolerance
@@ -67,10 +70,11 @@ def test_gradient(rng):
     n = 32
     batchsize = 8
     m = 4
+    L = 0.7
     alpha = torch.rand((batchsize, m, n + 1), generator=rng, requires_grad=True)
     dalpha = torch.rand((batchsize, m, n + 1), generator=rng)
     f_rhs = torch.rand(n, generator=rng)
-    model = DiffusionModel1d(f_rhs)
+    model = DiffusionModel1d(f_rhs, L)
     u = model(alpha)
     u_sq = torch.sum(u**2)
     u_sq.backward()
