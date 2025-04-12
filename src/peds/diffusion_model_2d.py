@@ -231,7 +231,7 @@ class DiffusionModel2dOperator(torch.autograd.Function):
             u = batched_u.reshape(f_rhs.shape)
         else:
             raise RuntimeError("tensor needs to be at least two-dimensional")
-        return torch.tensor(u, dtype=torch.float32)
+        return torch.tensor(u, dtype=f_rhs.dtype, device=f_rhs.device)
 
     @staticmethod
     def backward(ctx, grad_output):
