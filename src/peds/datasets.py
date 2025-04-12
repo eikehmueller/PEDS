@@ -38,7 +38,8 @@ class PEDSDataset(torch.utils.data.IterableDataset):
         """
         data = []
         for j, (alpha, q) in enumerate(itertools.islice(iter(self), n_samples)):
-            print(f"Saving sample {j+1}/{n_samples}")
+            if j % 100 == 0:
+                print(f"Saving sample {j+1}/{n_samples}")
             data.append([alpha.numpy(), q.numpy()])
         with open(filename, "wb") as f:
             pickle.dump(data, f)
