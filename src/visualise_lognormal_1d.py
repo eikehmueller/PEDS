@@ -1,14 +1,15 @@
 import itertools
 import numpy as np
 from matplotlib import pyplot as plt
-from peds.distributions import matern, LogNormalDistribution1d
+from peds.distributions_lognormal import matern, LogNormalDistribution1d
 
 n = 256
 Lambda = 0.1  # correlation length
 a_power = 2
 nu = a_power - 1 / 2
+domain_size = 1.3
 
-distribution = LogNormalDistribution1d(n, Lambda, a_power)
+distribution = LogNormalDistribution1d(n, domain_size, Lambda, a_power)
 
 # Compute covariance estimator
 n_samples = 10000
@@ -21,7 +22,8 @@ for alpha in itertools.islice(iter(distribution), n_samples):
     var += sum(alpha[:] ** 2) / ((n + 1) * n_samples)
 print(f"var = {var}")
 plt.clf()
-X = np.arange(0, 1 + 0.5 / n, 1 / n)
+h = domain_size / n
+X = np.arange(0, domain_size + 0.5 * h, h)
 for alpha in itertools.islice(iter(distribution), 8):
     plt.plot(X, alpha, linewidth=2)
 ax = plt.gca()
@@ -38,7 +40,7 @@ plt.plot(
 )
 plt.plot(
     X,
-    matern((X - 0.75) / Lambda, nu),
+    matern((X - 0.75 * domain_size) / Lambda, nu),
     label=r"matern covariance $\sigma^{-2}C_{\nu,\kappa}(\kappa|x-\frac{3}{4}|)$",
 )
 plt.legend(loc="upper left")

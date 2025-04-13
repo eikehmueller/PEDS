@@ -52,16 +52,17 @@ class LogNormalDistribution1d:
 
     (-Delta + kappa^2)^{a/2} alpha(x) = W(x)
 
-    on the unit interval where W(x) is white noise. kappa = 1/Lambda is
+    on the interval [0,L] where W(x) is white noise. kappa = 1/Lambda is
     the inverse correlation length and homogeneous Neumann BCs are
     assumed at the boundaries x=0, x=1. The generated field has Matern
     covariance with nu = a-d/2 where d=1 is the dimension.
     """
 
-    def __init__(self, n, Lambda, a_power, seed=141517):
+    def __init__(self, n, domain_size, Lambda, a_power, seed=141517):
         """Initialise new instance
 
         :arg n: number of grid cells
+        :arg domain_size: linear extent of domain
         :arg Lambda: correlation length
         :arg a_power: power a
         :arg seed: seed of random number generator
@@ -69,17 +70,18 @@ class LogNormalDistribution1d:
         super().__init__()
         assert a_power in (1, 2)
         self.n = n
+        self.domain_size = domain_size
         kappa = 1 / Lambda
         self.a_power = a_power
         self.rng = np.random.default_rng(seed=seed)
-        h = 1.0 / self.n
-        h_inv_sq = 1 / h**2
+        h = domain_size / self.n
+        h2_inv = 1 / h**2
 
         Q_banded = np.empty((2, self.n + 1))
-        Q_banded[1, :] = kappa**2 + 2 * h_inv_sq
-        Q_banded[1, 0] = kappa**2 + h_inv_sq
-        Q_banded[1, self.n] = kappa**2 + h_inv_sq
-        Q_banded[0, :] = -h_inv_sq
+        Q_banded[1, :] = kappa**2 + 2 * h2_inv
+        Q_banded[1, 0] = kappa**2 + h2_inv
+        Q_banded[1, self.n] = kappa**2 + h2_inv
+        Q_banded[0, :] = -h2_inv
         # banded Cholesky factor
         self.L_banded = sp.linalg.cholesky_banded(Q_banded, lower=False)
         nu = self.a_power - 1 / 2
@@ -91,7 +93,9 @@ class LogNormalDistribution1d:
         """Iterator over dataset"""
         while True:
             xi = self.rng.normal(
-                loc=0, scale=np.sqrt(self.n / self.sigma2), size=self.n + 1
+                loc=0,
+                scale=np.sqrt(self.n / (self.domain_size * self.sigma2)),
+                size=self.n + 1,
             )
             if self.a_power == 2:
                 yield sp.linalg.cho_solve_banded((self.L_banded, False), xi)
@@ -110,19 +114,21 @@ class LogNormalDistribution2d:
     covariance with nu = 2-d/2 = 1 where d=2 is the dimension.
     """
 
-    def __init__(self, n, Lambda, seed=141517):
+    def __init__(self, n, domain_size, Lambda, seed=141517):
         """Initialise new instance
 
         :arg n: number of grid cells
+        :arg domain_size: linear extent of domain
         :arg Lambda: correlation length
         :arg seed: seed of random number generator
         """
         super().__init__()
         self.n = n
+        self.domain_size = domain_size
         kappa = 1 / Lambda
         self.rng = np.random.default_rng(seed=seed)
-        h = 1.0 / self.n
-        h_inv_sq = 1 / h**2
+        h = self.domain_size / self.n
+        h2_inv = 1 / h**2
 
         row_ptr = [0]
         col_indices = []
@@ -131,19 +137,19 @@ class LogNormalDistribution2d:
         for j in range(self.n + 1):
             for k in range(self.n + 1):
                 if j > 0:
-                    K_left = h_inv_sq
+                    K_left = h2_inv
                 else:
                     K_left = 0
                 if j < self.n:
-                    K_right = h_inv_sq
+                    K_right = h2_inv
                 else:
                     K_right = 0
                 if k > 0:
-                    K_bottom = h_inv_sq
+                    K_bottom = h2_inv
                 else:
                     K_bottom = 0
                 if k < self.n:
-                    K_top = h_inv_sq
+                    K_top = h2_inv
                 else:
                     K_top = 0
                 values.append(K_left + K_right + K_bottom + K_top + kappa**2)
@@ -182,7 +188,9 @@ class LogNormalDistribution2d:
         while True:
             with self._xi_vec as v:
                 v[:] = self.rng.normal(
-                    loc=0, scale=self.n / np.sqrt(self.sigma2), size=(self.n + 1) ** 2
+                    loc=0,
+                    scale=self.n / (self.domain_size * np.sqrt(self.sigma2)),
+                    size=(self.n + 1) ** 2,
                 )
             self._ksp.solve(self._xi_vec, self._alpha_vec)
             u = np.empty(shape=(self.n + 1, self.n + 1))

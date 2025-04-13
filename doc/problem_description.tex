@@ -27,7 +27,7 @@ In a more abstract sense, let $V$ be the space of real-valued functions defined 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsection{One dimensional problem}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-Let $\Omega=[0,1]$ be the unit interval. In $d=1$ dimension \eqref{eqn:PDE} becomes
+Let $\Omega=[0,L]$ be the interval of length $L$. In $d=1$ dimension \eqref{eqn:PDE} becomes
 \begin{equation}
     -\frac{d}{dx}\left(\exp[\alpha(x)]\frac{du}{dx}(x)\right) = f(x)\qquad\text{for all $0<x<1$}
     \label{eqn:PDE_1d}
@@ -36,14 +36,14 @@ and we choose the boundary conditions
 \begin{equation}
     \begin{aligned}
     u(x=0) &=0 \qquad{\text{(homogeneous Dirichlet)}}\\
-    \frac{du}{dx}(x=1) &=-g\exp[-\alpha(1)] \qquad{\text{(von Neumann)}}
+    \frac{du}{dx}(x=L) &=-g\exp[-\alpha(L)] \qquad{\text{(von Neumann)}}
     \end{aligned}
     \label{eqn:boundary_condition_1d}
 \end{equation}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsection{Two-dimensional problem}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-The problem can be extended to two dimensions by considering the domain $\Omega=[0,1]\times[0,1]$ and seeking $u(x)$ such that
+The problem can be extended to two dimensions by considering the domain $\Omega=[0,L]\times[0,L]$ and seeking $u(x)$ such that
 \begin{equation}
     -\frac{\partial}{\partial x_0}\left(\exp[\alpha(x)]\frac{\partial u}{\partial x_0}(x)\right)-\frac{\partial}{\partial x_1}\left(\exp[\alpha(x)]\frac{\partial u}{\partial x_1}(x)\right) = f(x)\qquad\text{for all $x=(x_0,x_1)\in \Omega$}
     \label{eqn:PDE_2d}
@@ -52,9 +52,9 @@ subject to the boundary conditions
 \begin{equation}
     \begin{aligned}
     u(x_0=0,x_1) &=0 \qquad{\text{(homogeneous Dirichlet)}}\\
-    \frac{\partial u}{\partial x_1}(x_0=1,x_1) &=-g^{\text{(right)}}(x_1)\exp[-\alpha(x_0=1,x_1)]\\
+    \frac{\partial u}{\partial x_1}(x_0=L,x_1) &=-g^{\text{(right)}}(x_1)\exp[-\alpha(x_0=L,x_1)]\\
     \frac{\partial u}{\partial x_0}(x_0,x_1=0) &=g^{\text{(bottom)}}(x_0)\exp[-\alpha(x_0,x_1=0)] \qquad{\text{(von Neumann)}}\\
-    \frac{\partial u}{\partial x_0}(x_0,x_1=1) &=-g^{\text{(top)}}(x_0)\exp[-\alpha(x_0,x_1=1)]
+    \frac{\partial u}{\partial x_0}(x_0,x_1=L) &=-g^{\text{(top)}}(x_0)\exp[-\alpha(x_0,x_1=L)]
     \end{aligned}
     \label{eqn:boundary_condition_2d}
 \end{equation}
@@ -103,7 +103,7 @@ Note that $\mathcal{Q}$ is linear in the first two cases but non-linear in the l
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsection{One-dimensional problem}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-Let $\Omega = [0,1]$ be the unit interval. Split $\Omega$ into $n=m$ sub-intervals of size $h=1/m$ to obtain a grid \mbox{$\Omega_h := \bigcup_{j=0}^{m-1} I_j^{(h)}$} where $I_j^{(h)}=[jh,(j+1)h]=[x^{(h)}_j,x^{(h)}_{j+1}]$ for $j=0,1,\dots,m-1$ is the $j$-th sub-interval or cell of the grid. We call the points $x^{(h)}_j=jh$ for $j=0,1,\dots,m$ the vertices of the grid.
+Let $\Omega = [0,L]$ be the interval of length $L$. Split $\Omega$ into $n=m$ sub-intervals of size $h=L/m$ to obtain a grid \mbox{$\Omega_h := \bigcup_{j=0}^{m-1} I_j^{(h)}$} where $I_j^{(h)}=[jh,(j+1)h]=[x^{(h)}_j,x^{(h)}_{j+1}]$ for $j=0,1,\dots,m-1$ is the $j$-th sub-interval or cell of the grid. We call the points $x^{(h)}_j=jh$ for $j=0,1,\dots,m$ the vertices of the grid.
 
 Let $\alpha^{(h)}\in\mathbb{R}^{\widetilde{n}}$ with $\widetilde{n}=m+1$ be the vector with $\alpha^{(h)}_j\approx \alpha(x^{(h)}_j)$ for $j=0,1,\dots,m$ and $u^{(h)}\in\mathbb{R}^{n}$ be the vector with
 \begin{equation}
@@ -154,7 +154,7 @@ Note that by solving \eqref{eqn:discrete_system_1d} for $u^{(h)}$ for a given $\
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsection{Two-dimensional problem}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-Let $\Omega = [0,1]\times [0,1]$ be the unit square. Split $\Omega$ into $n=m^2$ cells of size $h\times h$ with $h=1/m$ to obtain a grid \mbox{$\Omega_h := \bigcup_{j=0}^{m-1}\bigcup_{k=0}^{m-1} I_{jk}^{(h)}$} where $I_{jk}^{(h)}=[jh,(j+1)h]\times [kh,(k+1)h]=[x^{(h)}_j,x^{(h)}_{j+1}]\times [x^{(h)}_k,x^{(h)}_{k+1}]$ is the cell of the grid with integer coordinates $j,k=0,1,\dots,m-1$. The centre of cell $I^{(h)}_{jk}$ is given by $(x^{(h)}_{j+\frac{1}{2}},x^{(h)}_{k+\frac{1}{2}})$. We call the points $x^{(h)}_{jk}=(jh,kh)$ for $j,k=0,1,\dots,m$ the vertices of the grid. Note that the grid has $\widetilde{n}=(m+1)^2$ vertices.
+Let $\Omega = [0,1]\times [0,1]$ be the unit square. Split $\Omega$ into $n=m^2$ cells of size $h\times h$ with $h=L/m$ to obtain a grid \mbox{$\Omega_h := \bigcup_{j=0}^{m-1}\bigcup_{k=0}^{m-1} I_{jk}^{(h)}$} where $I_{jk}^{(h)}=[jh,(j+1)h]\times [kh,(k+1)h]=[x^{(h)}_j,x^{(h)}_{j+1}]\times [x^{(h)}_k,x^{(h)}_{k+1}]$ is the cell of the grid with integer coordinates $j,k=0,1,\dots,m-1$. The centre of cell $I^{(h)}_{jk}$ is given by $(x^{(h)}_{j+\frac{1}{2}},x^{(h)}_{k+\frac{1}{2}})$. We call the points $x^{(h)}_{jk}=(jh,kh)$ for $j,k=0,1,\dots,m$ the vertices of the grid. Note that the grid has $\widetilde{n}=(m+1)^2$ vertices.
 
 Let $\alpha^{(h)}\in\mathbb{R}^{(m+1)\times(m+1)}$ be the tensor with $\alpha^{(h)}_{jk}\approx \alpha(x^{(h)}_j,x^{(h)}_k)$ for $j,k=0,1,\dots,m$ and $u^{(h)}\in\mathbb{R}^{m\times m}$ be the tensor with
 \begin{equation}
@@ -293,7 +293,7 @@ The problem with this approach is that the neural network is a black box.
 The following approach is described in \cite{pestourie2023physics}:
 \begin{enumerate}
     \item Generate a training data set $\{(\alpha^{(h)\ell},q^{(h)\ell})\}_{\ell=1}^{N_{\text{samples}}}$ as in Step 1 of the Pure ML approach in Section \ref{sec:pure_ml}.
-    \item Construct a second grid $\Omega_H$ with grid spacing $H=1/M$ consisting of $N<n$ cells; in $d=1$ we have that $n=m$, $N=M$ whereas in $d=2$ this becomes $n=m^2$, $N=M^2$. We usually want to choose $H\gg h$.
+    \item Construct a second grid $\Omega_H$ with grid spacing $H=L/M$ consisting of $N<n$ cells; in $d=1$ we have that $n=m$, $N=M$ whereas in $d=2$ this becomes $n=m^2$, $N=M^2$. We usually want to choose $H\gg h$.
     \item Define the downsampling operator
     \begin{xalignat}{2}
         R:\mathbb{R}^{\widetilde{n}}&\rightarrow \mathbb{R}^{\widetilde{N}},&
@@ -454,7 +454,7 @@ Here we only consider the two cases $a=1$, $\nu=\frac{1}{2}$ and $a=2$, $\nu=\fr
         C_{\nu=\frac{3}{2},\kappa}(\kappa|x-y|) &= \frac{1}{4\kappa^3}\left(1+\kappa|x-y|\right)\exp[-\kappa|x-y|].
 \end{aligned}
 \end{equation}
-For the finite domain $\Omega=[0,1]$ we need to impose boundary conditions which we choose to be $\frac{d\alpha}{dx}(0)=\frac{d\alpha}{dx}(1)=0$. To generate samples of $\alpha(x)$ in practice, we divide the domain into $n$ cells as above and sample the vector $\alpha^{(h)}=(\alpha(x_0),\alpha(x_1),\dots,\alpha(x_n))\in\mathbb{R}^{n+1}$ at the vertices $x_j$. A finite difference discretisation of the shifted Laplace operator $-\Delta + \kappa^2$ is given by the tridiagonal matrix
+For the finite domain $\Omega=[0,L]$ we need to impose boundary conditions which we choose to be $\frac{d\alpha}{dx}(0)=\frac{d\alpha}{dx}(L)=0$. To generate samples of $\alpha(x)$ in practice, we divide the domain into $n$ cells as above and sample the vector $\alpha^{(h)}=(\alpha(x_0),\alpha(x_1),\dots,\alpha(x_n))\in\mathbb{R}^{n+1}$ at the vertices $x_j$. A finite difference discretisation of the shifted Laplace operator $-\Delta + \kappa^2$ is given by the tridiagonal matrix
 \begin{equation}
     Q^{(h)} = \frac{1}{h^2}\begin{pmatrix}
         2 +\kappa^2h^2 & -1 & 0 & 0 & 0&\cdots & 0\\

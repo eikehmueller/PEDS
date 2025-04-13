@@ -65,11 +65,13 @@ def get_distribution(config):
     :arg config: configuration dictionary
     """
     n = config["discretisation"]["n"]
+    domain_size = config["discretisation"]["domain_size"]
     dim = config["model"]["dimension"]
     if dim == 1:
         if config["data"]["distribution"] == "lognormal":
             return LogNormalDistribution1d(
                 n,
+                domain_size,
                 config["distribution"]["lognormal"]["Lambda"],
                 config["distribution"]["lognormal"]["a_power"],
             )
@@ -78,7 +80,7 @@ def get_distribution(config):
     elif dim == 2:
         if config["data"]["distribution"] == "lognormal":
             return LogNormalDistribution2d(
-                n, config["distribution"]["lognormal"]["Lambda"]
+                n, domain_size, config["distribution"]["lognormal"]["Lambda"]
             )
         elif config["data"]["distribution"] == "fibre":
             r_fibre_dist = FibreRadiusDistribution(
@@ -90,6 +92,7 @@ def get_distribution(config):
             )
             return FibreDistribution2d(
                 n,
+                domain_size,
                 volume_fraction=config["distribution"]["fibre"]["volume_fraction"],
                 r_fibre_dist=r_fibre_dist,
                 kdiff_background=config["distribution"]["fibre"]["kdiff_background"],
@@ -107,13 +110,14 @@ def get_physics_model(config):
     :arg config: configuration dictionary
     """
     n = config["discretisation"]["n"]
+    domain_size = config["discretisation"]["domain_size"]
     dim = config["model"]["dimension"]
     if dim == 1:
         f_rhs = torch.ones(size=(n,), dtype=torch.float)
-        return DiffusionModel1d(f_rhs)
+        return DiffusionModel1d(f_rhs, domain_size)
     elif dim == 2:
         f_rhs = torch.ones(size=(n, n), dtype=torch.float)
-        return DiffusionModel2d(f_rhs)
+        return DiffusionModel2d(f_rhs, domain_size)
     else:
         raise RuntimeError(f"invalid dimension: {dim}")
 
