@@ -22,13 +22,14 @@ class Solver2d:
     given at the vertices of the grid.
     """
 
-    def __init__(self, m):
+    def __init__(self, m, domain_size):
         """Initialise new instance
 
         :arg m: number of grid cells in one dimension
+        :arg domain_size: linear extent of domain
         """
         self._m = m
-        self._hinv2 = m**2
+        self._h2_inv = (m / domain_size) ** 2
         # Create row-pointer and column-index arrays
         self._row_ptr = [0]
         self._col_indices = []
@@ -85,25 +86,25 @@ class Solver2d:
                 else:
                     K_top = 0
                 # diagonal value
-                values[nnz] = self._hinv2 * (K_left + K_right + K_bottom + K_top)
+                values[nnz] = self._h2_inv * (K_left + K_right + K_bottom + K_top)
                 if j == 0:
-                    values[nnz] += self._hinv2 * K_left
+                    values[nnz] += self._h2_inv * K_left
                 nnz += 1
                 # left coupling
                 if j > 0:
-                    values[nnz] = -self._hinv2 * K_left
+                    values[nnz] = -self._h2_inv * K_left
                     nnz += 1
                 # right coupling
                 if j < self._m - 1:
-                    values[nnz] = -self._hinv2 * K_right
+                    values[nnz] = -self._h2_inv * K_right
                     nnz += 1
                 # bottom coupling
                 if k > 0:
-                    values[nnz] = -self._hinv2 * K_bottom
+                    values[nnz] = -self._h2_inv * K_bottom
                     nnz += 1
                 # top coupling
                 if k < self._m - 1:
-                    values[nnz] = -self._hinv2 * K_top
+                    values[nnz] = -self._h2_inv * K_top
                     nnz += 1
         self._petsc_mat.setValuesCSR(self._row_ptr, self._col_indices, values)
         self._petsc_mat.assemble()
@@ -150,21 +151,23 @@ class Solver2d:
                 else:
                     K_top = 0
                 # diagonal value
-                v[j, k] += self._hinv2 * (K_left + K_right + K_bottom + K_top) * u[j, k]
+                v[j, k] += (
+                    self._h2_inv * (K_left + K_right + K_bottom + K_top) * u[j, k]
+                )
                 if j == 0:
-                    v[j, k] += self._hinv2 * K_left * u[j, k]
+                    v[j, k] += self._h2_inv * K_left * u[j, k]
                 # left coupling
                 if j > 0:
-                    v[j, k] -= self._hinv2 * K_left * u[j - 1, k]
+                    v[j, k] -= self._h2_inv * K_left * u[j - 1, k]
                 # right coupling
                 if j < self._m - 1:
-                    v[j, k] -= self._hinv2 * K_right * u[j + 1, k]
+                    v[j, k] -= self._h2_inv * K_right * u[j + 1, k]
                 # bottom coupling
                 if k > 0:
-                    v[j, k] -= self._hinv2 * K_bottom * u[j, k - 1]
+                    v[j, k] -= self._h2_inv * K_bottom * u[j, k - 1]
                 # top coupling
                 if k < self._m - 1:
-                    v[j, k] -= self._hinv2 * K_top * u[j, k + 1]
+                    v[j, k] -= self._h2_inv * K_top * u[j, k + 1]
         return v
 
 
@@ -248,6 +251,7 @@ class DiffusionModel2dOperator(torch.autograd.Function):
         )
         alpha, u = ctx.saved_tensors
         solver = ctx.metadata["solver"]
+        domain_size = ctx.metadata["domain_size"]
         w = DiffusionModel2dOperator._solve(solver, alpha.cpu(), grad_output.cpu()).to(
             grad_output.device
         )
@@ -255,13 +259,13 @@ class DiffusionModel2dOperator(torch.autograd.Function):
             grad_input_shape, device=grad_output.device, dtype=grad_output.dtype
         )
         m = grad_output.shape[-1]
-        h_inv2 = m**2
+        h2_inv = (m / domain_size) ** 2
         for r in range(m + 1):
             for s in range(m + 1):
                 if (1 <= r) and (r <= m - 1) and (1 <= s):
                     F_x = (
                         0.5
-                        * h_inv2
+                        * h2_inv
                         * torch.exp(0.5 * (alpha[..., r, s - 1] + alpha[..., r, s]))
                     )
                     z_x = (
@@ -275,7 +279,7 @@ class DiffusionModel2dOperator(torch.autograd.Function):
                 if (1 <= r) and (1 <= s) and (s <= m - 1):
                     F_y = (
                         0.5
-                        * h_inv2
+                        * h2_inv
                         * torch.exp(0.5 * (alpha[..., r - 1, s] + alpha[..., r, s]))
                     )
                     z_y = (
@@ -289,7 +293,7 @@ class DiffusionModel2dOperator(torch.autograd.Function):
                 if (r == 0) and (1 <= s) and (s <= m):
                     F_y0 = (
                         0.5
-                        * h_inv2
+                        * h2_inv
                         * torch.exp(0.5 * (alpha[..., r, s - 1] + alpha[..., r, s]))
                     )
                     z_y = w[..., r, s - 1] * u[..., r, s - 1]
@@ -300,14 +304,17 @@ class DiffusionModel2dOperator(torch.autograd.Function):
 
 class DiffusionModel2d(torch.nn.Module):
 
-    def __init__(self, f_rhs):
+    def __init__(self, f_rhs, domain_size):
         """Initialise a new instance
 
-        :arg f_rhs: 2d tensor representing the right hand side"""
+        :arg f_rhs: 2d tensor representing the right hand side
+        :arg domain_size: linear extent of domain"""
         super().__init__()
         m = f_rhs.shape[-1]
-        solver = Solver2d(m)
-        self.metadata = dict(solver=solver, f_rhs=torch.Tensor(f_rhs))
+        solver = Solver2d(m, domain_size)
+        self.metadata = dict(
+            solver=solver, f_rhs=torch.Tensor(f_rhs), domain_size=domain_size
+        )
 
     def to(self, device):
         """Move to device
@@ -316,7 +323,9 @@ class DiffusionModel2d(torch.nn.Module):
         """
         super().to(device)
         self.metadata = dict(
-            solver=self.metadata["solver"], f_rhs=self.metadata["f_rhs"].to(device)
+            solver=self.metadata["solver"],
+            f_rhs=self.metadata["f_rhs"].to(device),
+            domain_size=self.metadata["domain_size"],
         )
         return self
 
@@ -334,6 +343,7 @@ class DiffusionModel2d(torch.nn.Module):
         :arg scaling_factor: coarsening factor, must be an integer divisor of problem size
         """
         f_rhs = self.metadata["f_rhs"]
+        domain_size = self.metadata["domain_size"]
         n = f_rhs.shape[-1]
         assert (
             n == (n // scaling_factor) * scaling_factor
@@ -345,4 +355,4 @@ class DiffusionModel2d(torch.nn.Module):
                 kernel_size=(scaling_factor, scaling_factor),
             )
         )
-        return DiffusionModel2d(f_rhs_coarse)
+        return DiffusionModel2d(f_rhs_coarse, domain_size)

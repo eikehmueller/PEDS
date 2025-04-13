@@ -7,7 +7,8 @@ def test_solver_2d():
     """Check that the solver for the 2d diffusion problem works"""
     rng = np.random.default_rng(seed=215725)
     m = 16
-    solver = Solver2d(m)
+    domain_size = 0.7
+    solver = Solver2d(m, domain_size)
     u_exact = rng.normal(size=(m, m))
     alpha = rng.normal(size=(m + 1, m + 1))
     f_rhs = solver.apply_operator(alpha, u_exact)
@@ -21,9 +22,10 @@ def test_diffusion_model_2d_gradient():
     """Check that the gradient of the 2d model agrees with finite difference approximation"""
     rng = np.random.default_rng(seed=231575)
     m = 64
+    domain_size = 0.7
     f_rhs = rng.normal(size=(m, m))
     alpha = torch.tensor(rng.normal(size=(m + 1, m + 1)), requires_grad=True)
-    model = DiffusionModel2d(f_rhs)
+    model = DiffusionModel2d(f_rhs, domain_size)
     u = model(alpha)
     w = torch.tensor(rng.normal(size=(m, m)))
     alpha_hat = torch.tensor(rng.normal(size=(m + 1, m + 1)))
@@ -44,9 +46,10 @@ def test_diffusion_model_2d_gradient_batched():
     rng = np.random.default_rng(seed=231575)
     batchsize = 16
     m = 32
+    domain_size = 0.7
     f_rhs = rng.normal(size=(m, m))
     alpha = torch.tensor(rng.normal(size=(batchsize, m + 1, m + 1)), requires_grad=True)
-    model = DiffusionModel2d(f_rhs)
+    model = DiffusionModel2d(f_rhs, domain_size)
     u = model(alpha)
     w = torch.tensor(rng.normal(size=(batchsize, m, m)))
     alpha_hat = torch.tensor(rng.normal(size=(batchsize, m + 1, m + 1)))
