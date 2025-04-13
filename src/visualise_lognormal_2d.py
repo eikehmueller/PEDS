@@ -8,10 +8,12 @@ from firedrake import *
 
 
 n = 64
+domain_size = 1.3
+h = domain_size / n
 Lambda = 0.1  # correlation length
 nu = 1
 
-distribution = LogNormalDistribution2d(n, Lambda)
+distribution = LogNormalDistribution2d(n, domain_size, Lambda)
 
 # Compute covariance estimator
 n_samples = 10000
@@ -20,10 +22,10 @@ j0, k0 = n // 2, n // 2
 
 d0 = 1e-3
 dmax = d0 + max(
-    np.sqrt(j0**2 + k0**2) / n,
-    np.sqrt((j0 - n) ** 2 + k0**2) / n,
-    np.sqrt(j0**2 + (k0 - n) ** 2) / n,
-    np.sqrt((j0 - n) ** 2 + (k0 - n) ** 2) / n,
+    np.sqrt(j0**2 + k0**2) * h,
+    np.sqrt((j0 - n) ** 2 + k0**2) * h,
+    np.sqrt(j0**2 + (k0 - n) ** 2) * h,
+    np.sqrt((j0 - n) ** 2 + (k0 - n) ** 2) * h,
 )
 
 nbins = 40
@@ -33,7 +35,7 @@ var = 0
 
 for j in range(n + 1):
     for k in range(n + 1):
-        d = np.sqrt((j - j0) ** 2 + (k - k0) ** 2) / n
+        d = np.sqrt((j - j0) ** 2 + (k - k0) ** 2) * h
         bin_idx = int(np.floor(nbins * d / dmax))
         bin_volume[bin_idx] += 1
 
@@ -45,13 +47,13 @@ for ell, alpha in enumerate(
         alpha_samples.append(alpha)
     for j in range(n + 1):
         for k in range(n + 1):
-            d = np.sqrt((j - j0) ** 2 + (k - k0) ** 2) / n
+            d = np.sqrt((j - j0) ** 2 + (k - k0) ** 2) * h
             bin_idx = int(np.floor(nbins * d / dmax))
             cov[bin_idx + 1] += (
                 alpha[j0, k0] * alpha[j, k] / (n_samples * bin_volume[bin_idx])
             )
     cov[0] += alpha[j0, k0] ** 2 / n_samples
-save_vtk(alpha_samples, "samples.vtk")
+save_vtk(alpha_samples, domain_size, "samples.vtk")
 print(f"variance = {cov[0]}")
 plt.clf()
 X = (np.arange(nbins + 1) - 0.5) / nbins * dmax

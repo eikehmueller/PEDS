@@ -5,7 +5,8 @@ dimension = 1          # dimension of problem
 filename = "../data/model_1d_256_lognormal.pth"
 
 [discretisation]
-n = 256            # number of grid cells
+n = 256             # number of grid cells
+domain_size = 1.0   # linear extent of domain
 scaling_factor = 16 # ratio between fine and coarse grid cells
 
 [qoi]

@@ -175,12 +175,13 @@ def visualise_performance(rms_error, time_per_sample, filename):
     plt.savefig(filename, bbox_inches="tight")
 
 
-def visualise_error(rms_error, sample_points, filename):
+def visualise_error(rms_error, sample_points, domain_size, filename):
     """Visualise the RMSE error
 
     :rms_error: dictionary with the RMSE error for each model
     :dataset: dataset to use for the error calculation
     :sample_points: Sample points used for for QoI
+    :arg domain_size: linear extent of domain
     :filename: name of file to save the plot to
     """
     sample_points = np.asanyarray(sample_points)
@@ -211,8 +212,8 @@ def visualise_error(rms_error, sample_points, filename):
     else:
         _, ax = plt.subplots()
         ax.set_aspect("equal")
-        ax.set_xlim(0, 1)
-        ax.set_ylim(0, 1)
+        ax.set_xlim(0, domain_size)
+        ax.set_ylim(0, domain_size)
         ax.scatter(
             sample_points[:, 0],
             sample_points[:, 1],
@@ -346,4 +347,9 @@ if __name__ == "__main__":
         sum_qoi_components=False,
     )
 
-    visualise_error(rms_error, config["qoi"]["sample_points"], "rmse.pdf")
+    visualise_error(
+        rms_error,
+        config["qoi"]["sample_points"],
+        config["discretisation"]["domain_size"],
+        "rmse.pdf",
+    )

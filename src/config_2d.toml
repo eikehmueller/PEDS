@@ -2,22 +2,23 @@ title = "PEDS configuration file"
 
 [model]
 dimension = 2          # dimension of problem
-filename = "../data/model_2d_128x128_lognormal.pth"
+filename = "../data/model_2d_128x128_fibre.pth"
 
 [discretisation]
 n = 128             # number of grid cells
+domain_size = 0.2   # linear extent of domain
 scaling_factor = 16 # ratio between fine and coarse grid cells
 
 [qoi]
-sample_points = [[0.790,0.356],[0.743,0.873],[0.456,0.914],[0.293,0.291],[0.123,0.434],[0.222,0.851],[0.865,0.638],[0.207,0.096],[0.940,0.129],[0.529,0.422]]
+sample_points = [[0.158,0.071],[0.149,0.175],[0.091,0.183],[0.059,0.058],[0.025,0.087],[0.044,0.170],[0.173,0.128],[0.041,0.019],[0.188,0.026],[0.106,0.084]]
 
 # parameter for data generation
 [data]
-distribution = "lognormal" # distribution ("lognormal" or "fibre")
+distribution = "fibre" # distribution ("lognormal" or "fibre")
 n_samples_train = 2048 # number of training samples
 n_samples_valid = 32   # number of validation samples
 n_samples_test = 32    # number of test samples
-filename = "../data/data_2d_128x128_lognormal.npy"  # name of file with data
+filename = "../data/data_2d_128x128_fibre.npy"  # name of file with data
 
 # parameters of log-normal distribution
 [distribution.lognormal]                            
@@ -26,10 +27,10 @@ Lambda = 0.1           # correlation length for log-normal distribution
 # parameters of fibre distribution
 [distribution.fibre]   
 volume_fraction=0.55   # fibre volume fraction
-r_fibre_avg=0.0375     # average fibre radius
-r_fibre_min=0.025      # lower bound for fibre radius
-r_fibre_max=0.050      # upper bound for fibre radius
-r_fibre_sigma=0.0025   # variance of fibre radius
+r_fibre_avg=7.5E-3     # average fibre radius
+r_fibre_min=5.0E-3     # lower bound for fibre radius
+r_fibre_max=10.0E-3    # upper bound for fibre radius
+r_fibre_sigma=0.5E-3   # variance of fibre radius
 gaussian = true        # Gaussian distribution of fibre radii?
 kdiff_background=1.0   # diffusion coefficient in background material
 kdiff_fibre = 0.01     # diffusion coefficient in fibres
@@ -37,6 +38,6 @@ kdiff_fibre = 0.01     # diffusion coefficient in fibres
 # parameters for training algorithm
 [train]
 batch_size = 64     # batch size
-n_epoch = 1024      # number of epochs
+n_epoch = 16        # number of epochs
 lr_initial = 1.0e-2 # initial learning rate
 lr_final = 2.0e-3   # final learning rate

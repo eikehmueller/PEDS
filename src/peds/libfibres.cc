@@ -79,6 +79,7 @@ void initialise_rng(unsigned int seed, unsigned int &rng_state_length,
  * be overwritten with the new positions.
  *
  * @param[in] n_fibres number of fibres
+ * @param[in] domain_size linear extent of domain
  * @param[in] r_fibres fibre radii
  * @param[inout] fibre_locations fibre locations
  * @param[in] num_repeats number of repeats
@@ -90,9 +91,10 @@ void initialise_rng(unsigned int seed, unsigned int &rng_state_length,
  * generator
  */
 extern "C" {
-void move_fibres(const unsigned int n_fibres, const double *r_fibres,
-                 double *fibre_locations, const unsigned int num_repeats,
-                 const double eps_fibres, const unsigned int it_max_ovlap,
+void move_fibres(const unsigned int n_fibres, const double domain_size,
+                 const double *r_fibres, double *fibre_locations,
+                 const unsigned int num_repeats, const double eps_fibres,
+                 const unsigned int it_max_ovlap,
                  unsigned int &rng_state_length, char *rng_state) {
   // Set random number generator state from state object
   std::mt19937 rng;
@@ -104,7 +106,7 @@ void move_fibres(const unsigned int n_fibres, const double *r_fibres,
   std::iota(labels.begin(), labels.end(), 0);
   std::shuffle(labels.begin(), labels.end(), rng);
   double *dist = new double[n_fibres];
-  double L[2] = {1.0, 1.0};
+  double L[2] = {domain_size, domain_size};
 
   std::uniform_real_distribution<double> uniform_distribution(0.0, 1.0);
   bool overlap = true;
