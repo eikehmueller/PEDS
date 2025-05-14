@@ -31,6 +31,7 @@ __all__ = [
     "get_downsampler",
     "get_nn_model",
     "get_coarse_model",
+    "get_pure_nn_model",
     "get_datasets",
 ]
 
@@ -260,6 +261,69 @@ def get_coarse_model(physics_model_highres, scaling_factor, qoi):
     else:
         raise RuntimeError(f"invalid dimension: {dim}")
 
+def get_pure_nn_model(config):
+    """Initialise the naive NN model
+
+    Returns neural network model object
+
+    :arg config: configuration dictionary
+    """
+    qoi = get_qoi(config)
+    n = config["discretisation"]["n"]
+    if config["model"]["dimension"] == 1:
+        return torch.nn.Sequential(
+            torch.nn.Unflatten(-1, (1, n + 1)),
+            VertexToVolumeInterpolator1d(),
+            torch.nn.Conv1d(1, 4, 3, padding=1),
+            torch.nn.ReLU(),
+            torch.nn.MaxPool1d(2, ceil_mode=True),
+            torch.nn.Conv1d(4, 4, 3, padding=1),
+            torch.nn.ReLU(),
+            torch.nn.MaxPool1d(2, ceil_mode=True),
+            torch.nn.Conv1d(4, 8, 3, padding=1),
+            torch.nn.ReLU(),
+            torch.nn.MaxPool1d(2, ceil_mode=True),
+            torch.nn.Conv1d(8, 8, 3, padding=1),
+            torch.nn.ReLU(),
+            torch.nn.MaxPool1d(2, ceil_mode=True),
+            torch.nn.Conv1d(8, 8, 3, padding=1),
+            torch.nn.Flatten(-2, -1),
+            torch.nn.ReLU(),
+            torch.nn.Linear(n//2,16),
+            torch.nn.ReLU(),
+            torch.nn.Linear(16,16),
+            torch.nn.ReLU(),
+            torch.nn.Linear(16,qoi.dim),
+        )
+
+    elif config["model"]["dimension"] == 2:
+        return torch.nn.Sequential(
+            torch.nn.Unflatten(-2, (1, n + 1)),
+            VertexToVolumeInterpolator2d(),
+            torch.nn.Conv2d(1, 4, 3, padding=1),
+            torch.nn.ReLU(),
+            torch.nn.MaxPool2d(2, ceil_mode=True),
+            torch.nn.Conv2d(4, 4, 3, padding=1),
+            torch.nn.ReLU(),
+            torch.nn.MaxPool2d(2, ceil_mode=True),
+            torch.nn.Conv2d(4, 8, 3, padding=1),
+            torch.nn.ReLU(),
+            torch.nn.MaxPool2d(2, ceil_mode=True),
+            torch.nn.Conv2d(8, 8, 3, padding=1),
+            torch.nn.ReLU(),
+            torch.nn.MaxPool2d(2, ceil_mode=True),
+            torch.nn.Conv2d(8, 8, 3, padding=1),
+            torch.nn.Flatten(-3, -1),
+            torch.nn.ReLU(),
+            torch.nn.Linear(8*(n//16)**2,16),
+            torch.nn.ReLU(),
+            torch.nn.Linear(16,16),
+            torch.nn.ReLU(),
+            torch.nn.Linear(16,qoi.dim),
+        )
+    else:
+        dim = config["model"]["dimension"]
+        raise RuntimeError(f"invalid dimension: {dim}")
 
 def get_datasets(config):
     """Return the training, validation and test datasets

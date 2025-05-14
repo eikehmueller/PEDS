@@ -21,7 +21,7 @@ from setup import (
 
 
 def measure_error(
-    dataset, peds_model, physics_model_highres, scaling_factor, sum_qoi_components=False
+    dataset, peds_model, pure_nn_model,physics_model_highres, scaling_factor, sum_qoi_components=False
 ):
     """Measure loss values of different models
 
@@ -32,6 +32,7 @@ def measure_error(
 
     :arg dataset: dataset to use for the loss calculation
     :arg peds_model: PEDS model
+    :arg pure_nn_model: pure NN model
     :arg physics_model_highres: high-fidelity physics model
     :arg scaling_factor: scaling factor for the coarsest model
     :arg sum_qoi_components: if True, sum the components of the error
@@ -41,12 +42,16 @@ def measure_error(
     dataloader = torch.utils.data.DataLoader(dataset, batch_size=len(dataset))
     rms_error = dict()
     alpha, q_target = next(iter(dataloader))
-    q_pred = peds_model(alpha)
-    avg_squared_error = np.average((q_pred - q_target).detach().numpy() ** 2, axis=0)
+    q_pred_peds = peds_model(alpha)
+    q_pred_pure_nn = pure_nn_model(alpha)
+    avg_squared_error_peds = np.average((q_pred_peds - q_target).detach().numpy() ** 2, axis=0)
+    avg_squared_error_pure_nn = np.average((q_pred_pure_nn - q_target).detach().numpy() ** 2, axis=0)
     if sum_qoi_components:
-        rms_error["peds"] = np.sqrt(np.sum(avg_squared_error))
+        rms_error["peds"] = np.sqrt(np.sum(avg_squared_error_peds))
+        rms_error["pure_nn"] = np.sqrt(np.sum(avg_squared_error_pure_nn))
     else:
-        rms_error["peds"] = np.sqrt(avg_squared_error)
+        rms_error["peds"] = np.sqrt(avg_squared_error_peds)
+        rms_error["pure_nn"] = np.sqrt(avg_squared_error_pure_nn)
     rms_error["coarse"] = dict()
     for sf, cm in coarse_model.items():
         q_pred_coarse = cm(alpha)
@@ -61,7 +66,7 @@ def measure_error(
 
 
 def measure_performance(
-    dataset, peds_model, physics_model_highres, scaling_factor, device
+    dataset, peds_model,pure_nn_model, physics_model_highres, scaling_factor, device
 ):
     """Measure the performance of the models
 
@@ -72,6 +77,7 @@ def measure_performance(
 
     :arg dataset: dataset to use for the loss calculation
     :arg peds_model: PEDS model
+    :arg pure_nn_model: pure NN model
     :arg physics_model_highres: high-fidelity physics model
     :arg scaling_factor: scaling factor for the coarsest model
     :arg device: device to run on
@@ -79,11 +85,14 @@ def measure_performance(
     if device == next(peds_model.parameters()).device:
         physics_model_highres_device = physics_model_highres
         peds_model_device = peds_model
+        pure_nn_model_device = pure_nn_model
     else:
         physics_model_highres_device = copy.deepcopy(physics_model_highres)
         physics_model_highres_device.to(device)
         peds_model_device = copy.deepcopy(peds_model)
         peds_model_device.to(device)
+        pure_nn_model_device = copy.deepcopy(pure_nn_model)
+        pure_nn_model_device.to(device)
     n_samples = len(dataset)
     dataloader = torch.utils.data.DataLoader(dataset, batch_size=n_samples)
     sfs = 2 ** (1 + np.arange(int(np.log2(scaling_factor))))
@@ -99,6 +108,10 @@ def measure_performance(
     _ = peds_model_device(alpha)
     t_finish = time.perf_counter()
     time_per_sample["peds"] = (t_finish - t_start) / n_samples
+    t_start = time.perf_counter()
+    _ = pure_nn_model_device(alpha)
+    t_finish = time.perf_counter()
+    time_per_sample["pure_nn"] = (t_finish - t_start) / n_samples
     t_start = time.perf_counter()
     _ = physics_model_highres_device(alpha)
     t_finish = time.perf_counter()
@@ -128,9 +141,18 @@ def visualise_performance(rms_error, time_per_sample, filename):
         [rms_error["peds"]],
         color="red",
         linewidth=2,
-        marker="o",
+        marker="s",
         markersize=6,
         label="PEDS",
+    )
+    plt.plot(
+        [time_per_sample["pure_nn"]],
+        [rms_error["pure_nn"]],
+        color="green",
+        linewidth=2,
+        marker="*",
+        markersize=8,
+        label="pure NN",
     )
     sfs = sorted(rms_error["coarse"].keys())
     plt.plot(
@@ -298,7 +320,8 @@ if __name__ == "__main__":
     physics_model_lowres = physics_model_highres.coarsen(scaling_factor)
 
     model = PEDSModel(physics_model_lowres, downsampler, qoi)
-    model.load(config["model"]["filename"])
+    model.load(config["model"]["peds_filename"])
+    pure_nn_model = torch.load(config["model"]["pure_nn_filename"],weights_only=False)
 
     n_param = sum([torch.numel(p) for p in model.parameters()])
     print(f"number of model parameters = {n_param}")
@@ -306,6 +329,7 @@ if __name__ == "__main__":
     rms_error = measure_error(
         test_dataset,
         model,
+        pure_nn_model,
         physics_model_highres,
         scaling_factor,
         sum_qoi_components=True,
@@ -323,7 +347,7 @@ if __name__ == "__main__":
             print(f"  rmse error [{key:10s}] = {rmse:8.4e}")
 
     time_per_sample = measure_performance(
-        test_dataset, model, physics_model_highres, scaling_factor, device
+        test_dataset, model,pure_nn_model, physics_model_highres, scaling_factor, device
     )
     print()
     print("==== performance ====")
@@ -342,6 +366,7 @@ if __name__ == "__main__":
     rms_error = measure_error(
         test_dataset,
         model,
+        pure_nn_model,
         physics_model_highres,
         scaling_factor,
         sum_qoi_components=False,

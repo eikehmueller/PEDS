@@ -11,6 +11,7 @@ from setup import (
     get_qoi,
     get_downsampler,
     get_nn_model,
+    get_pure_nn_model,
     get_datasets,
 )
 
@@ -57,7 +58,7 @@ if __name__ == "__main__":
     )
 
     model = PEDSModel(physics_model_lowres, downsampler, qoi, nn_model)
-
+    
     n_param = sum([torch.numel(p) for p in model.parameters()])
     print(f"number of model parameters = {n_param}")
 
@@ -73,42 +74,97 @@ if __name__ == "__main__":
     scheduler = torch.optim.lr_scheduler.ExponentialLR(optimizer, gamma=gamma)
 
     writer = SummaryWriter(flush_secs=5)
-    print("epoch      :  training    validation    coarse")
-    for epoch in range(config["train"]["n_epoch"]):
-        train_loss_avg = 0
-        for i, data in enumerate(train_dataloader):
-            alpha, q_target = data
+    if config["train"]["train_peds"]:
+        ##### Train PEDS model ####
+        print("epoch      :  training    validation    coarse")
+        for epoch in range(config["train"]["n_epoch"]):
+            train_loss_avg = 0
+            for i, data in enumerate(train_dataloader):
+                alpha, q_target = data
+                alpha = alpha.to(device)
+                q_target = q_target.to(device)
+                optimizer.zero_grad()
+                q_pred = model(alpha)
+                loss = loss_fn(q_pred, q_target)
+                loss.backward()
+                optimizer.step()
+                train_loss = loss.item()
+                train_loss_avg += train_loss / (
+                    n_samples_train / config["train"]["batch_size"]
+                )
+            alpha, q_target = next(iter(valid_dataloader))
             alpha = alpha.to(device)
             q_target = q_target.to(device)
-            optimizer.zero_grad()
             q_pred = model(alpha)
-            loss = loss_fn(q_pred, q_target)
-            loss.backward()
-            optimizer.step()
-            train_loss = loss.item()
-            train_loss_avg += train_loss / (
-                n_samples_train / config["train"]["batch_size"]
+            valid_loss = loss_fn(q_pred, q_target)
+            q_pred_coarse = coarse_model(alpha)
+            coarse_loss = loss_fn(q_pred_coarse, q_target)
+            writer.add_scalars(
+                "Loss",
+                {"train": train_loss_avg, "valid": valid_loss, "coarse": coarse_loss},
+                epoch,
             )
-        alpha, q_target = next(iter(valid_dataloader))
-        alpha = alpha.to(device)
-        q_target = q_target.to(device)
-        q_pred = model(alpha)
-        valid_loss = loss_fn(q_pred, q_target)
-        q_pred_coarse = coarse_model(alpha)
-        coarse_loss = loss_fn(q_pred_coarse, q_target)
-        writer.add_scalars(
-            "Loss",
-            {"train": train_loss_avg, "valid": valid_loss, "coarse": coarse_loss},
-            epoch,
-        )
-        writer.add_scalar("NN weight", model.w.detach(), epoch)
-        writer.add_scalar("gain", coarse_loss / valid_loss, epoch)
-        writer.add_scalar("learning rate", scheduler.get_last_lr()[0], epoch)
-        print(
-            f"epoch {epoch+1:5d}:  {train_loss_avg:12.6f} {valid_loss:12.6f} {coarse_loss:12.6f}"
-        )
-        scheduler.step()
+            writer.add_scalar("NN weight", model.w.detach(), epoch)
+            writer.add_scalar("gain", coarse_loss / valid_loss, epoch)
+            writer.add_scalar("learning rate", scheduler.get_last_lr()[0], epoch)
+            print(
+                f"epoch {epoch+1:5d}:  {train_loss_avg:12.6f} {valid_loss:12.6f} {coarse_loss:12.6f}"
+            )
+            scheduler.step()
 
-    writer.flush()
-    model.to("cpu")
-    model.save(config["model"]["filename"])
+        writer.flush()
+        model.to("cpu")
+        model.save(config["model"]["peds_filename"])
+
+    ##### Train pure NN model ####
+
+    pure_nn_model = get_pure_nn_model(config)
+
+    n_param = sum([torch.numel(p) for p in pure_nn_model.parameters()])
+    print(f"number of model parameters = {n_param}")
+
+    pure_nn_model.to(device)
+
+    optimizer = torch.optim.Adam(pure_nn_model.parameters(), lr=config["train"]["lr_initial"])
+    scheduler = torch.optim.lr_scheduler.ExponentialLR(optimizer, gamma=gamma)
+
+    writer = SummaryWriter(flush_secs=5)
+
+    if config["train"]["train_pure_nn"]:
+        ##### Train pure NN model ####
+        print("epoch      :  training    validation    coarse")
+        for epoch in range(config["train"]["n_epoch"]):
+            train_loss_avg = 0
+            for i, data in enumerate(train_dataloader):
+                alpha, q_target = data
+                alpha = alpha.to(device)
+                q_target = q_target.to(device)
+                optimizer.zero_grad()
+                q_pred = pure_nn_model(alpha)
+                loss = loss_fn(q_pred, q_target)
+                loss.backward()
+                optimizer.step()
+                train_loss = loss.item()
+                train_loss_avg += train_loss / (
+                    n_samples_train / config["train"]["batch_size"]
+                )
+            alpha, q_target = next(iter(valid_dataloader))
+            alpha = alpha.to(device)
+            q_target = q_target.to(device)
+            q_pred = pure_nn_model(alpha)
+            valid_loss = loss_fn(q_pred, q_target)
+            q_pred_coarse = coarse_model(alpha)
+            coarse_loss = loss_fn(q_pred_coarse, q_target)
+            writer.add_scalars(
+                "Loss",
+                {"train": train_loss_avg, "valid": valid_loss, "coarse": coarse_loss},
+                epoch,
+            )
+            writer.add_scalar("gain", coarse_loss / valid_loss, epoch)
+            writer.add_scalar("learning rate", scheduler.get_last_lr()[0], epoch)
+            print(
+                f"epoch {epoch+1:5d}:  {train_loss_avg:12.6f} {valid_loss:12.6f} {coarse_loss:12.6f}"
+            )
+            scheduler.step()
+        pure_nn_model.to("cpu")
+        torch.save(pure_nn_model, config["model"]["pure_nn_filename"])

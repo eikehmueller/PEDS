@@ -16,6 +16,11 @@ class QoISampling1d(torch.nn.Module):
         self.sample_points = np.asarray(sample_points)
         assert np.all(0 < self.sample_points) and np.all(self.sample_points < 1)
 
+    @property
+    def dim(self):
+        """Dimension = number of sample points"""
+        return self.sample_points.shape[0]
+
     def forward(self, x):
         n = x.shape[-1]
         idxs = np.floor(n * self.sample_points)
@@ -33,6 +38,11 @@ class QoISampling2d(torch.nn.Module):
         super().__init__()
         self.sample_points = np.asarray(sample_points)
         assert np.all(0 < self.sample_points) and np.all(self.sample_points < 1)
+
+    @property
+    def dim(self):
+        """Dimension = number of sample points"""
+        return self.sample_points.shape[0]
 
     def forward(self, x):
         N = np.asarray(x.shape[-2:])
