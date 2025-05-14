@@ -2,7 +2,8 @@ title = "PEDS configuration file"
 
 [model]
 dimension = 2          # dimension of problem
-filename = "../data/model_2d_128x128_fibre.pth"
+peds_filename = "../data/peds_model_2d_128x128_fibre.pth"
+pure_nn_filename = "../data/pure_nn_model_2d_128x128_fibre.pth"
 
 [discretisation]
 n = 128             # number of grid cells
@@ -32,11 +33,13 @@ r_fibre_min=5.0E-3     # lower bound for fibre radius
 r_fibre_max=10.0E-3    # upper bound for fibre radius
 r_fibre_sigma=0.5E-3   # variance of fibre radius
 gaussian = true        # Gaussian distribution of fibre radii?
-kdiff_background=1.0   # diffusion coefficient in background material
-kdiff_fibre = 0.01     # diffusion coefficient in fibres
+kdiff_background=0.2   # diffusion coefficient in background material
+kdiff_fibre = 7.0      # diffusion coefficient in fibres
 
 # parameters for training algorithm
 [train]
+train_peds = true   # train PEDS model?
+train_pure_nn = true # train pure NN model?
 batch_size = 64     # batch size
 n_epoch = 16        # number of epochs
 lr_initial = 1.0e-2 # initial learning rate

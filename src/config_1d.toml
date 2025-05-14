@@ -2,7 +2,8 @@ title = "PEDS configuration file"
 
 [model]
 dimension = 1          # dimension of problem
-filename = "../data/model_1d_256_lognormal.pth"
+peds_filename = "../data/peds_model_1d_256_lognormal.pth"
+pure_nn_filename = "../data/pure_nn_model_1d_256_lognormal.pth"
 
 [discretisation]
 n = 256             # number of grid cells
@@ -26,7 +27,9 @@ a_power = 2               # power in log-normal distribution
 
 
 [train]
-batch_size = 64     # batch size
-n_epoch = 16       # number of epochs
-lr_initial = 1.0e-2 # initial learning rate
-lr_final = 1.0e-3   # final learning rate
+train_peds = true    # train PEDS model?
+train_pure_nn = true # train pure NN model?
+batch_size = 64      # batch size
+n_epoch = 16         # number of epochs
+lr_initial = 1.0e-2  # initial learning rate
+lr_final = 1.0e-3    # final learning rate
