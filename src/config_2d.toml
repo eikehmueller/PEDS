@@ -7,7 +7,7 @@ pure_nn_filename = "../data/pure_nn_model_2d_128x128_fibre.pth"
 
 [discretisation]
 n = 128             # number of grid cells
-domain_size = 0.2   # linear extent of domain
+domain_size = 0.2   # linear extent of domain [mm]
 scaling_factor = 16 # ratio between fine and coarse grid cells
 
 [qoi]
@@ -27,14 +27,14 @@ Lambda = 0.1           # correlation length for log-normal distribution
                      
 # parameters of fibre distribution
 [distribution.fibre]   
-volume_fraction=0.55   # fibre volume fraction
-r_fibre_avg=7.5E-3     # average fibre radius
-r_fibre_min=5.0E-3     # lower bound for fibre radius
-r_fibre_max=10.0E-3    # upper bound for fibre radius
-r_fibre_sigma=0.5E-3   # variance of fibre radius
-gaussian = true        # Gaussian distribution of fibre radii?
-kdiff_background=0.2   # diffusion coefficient in background material
-kdiff_fibre = 7.0      # diffusion coefficient in fibres
+volume_fraction=0.55      # fibre volume fraction
+r_fibre_avg=7.5E-3        # average fibre radius
+r_fibre_min=5.0E-3        # lower bound for fibre radius
+r_fibre_max=10.0E-3       # upper bound for fibre radius
+r_fibre_sigma=0.5E-3      # variance of fibre radius
+gaussian = true           # Gaussian distribution of fibre radii?
+kdiff_background = 2.0E-4 # diffusion coefficient in background material
+kdiff_fibre = 7.0E-3      # diffusion coefficient in fibres
 
 # parameters for training algorithm
 [train]
