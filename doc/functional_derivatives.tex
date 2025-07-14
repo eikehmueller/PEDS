@@ -1,0 +1,109 @@
+\documentclass[11pt]{article}
+\usepackage{amssymb,amsmath}
+\usepackage{graphicx}
+\usepackage{hyperref}
+\renewcommand{\vec}[1]{\boldsymbol{#1}}
+\hypersetup{
+    colorlinks=true,
+    linkcolor=blue,
+    citecolor=red,
+    filecolor=magenta,      
+    urlcolor=blue
+    }
+\title{Functional derivatives}
+\author{Eike Mueller}
+\usepackage[margin=2cm]{geometry}
+\begin{document}
+\maketitle
+In this document we consider a functional of the form $F(\alpha,u;\cdot)$ where, for a given control $\alpha\in M$, the function $u=u(\alpha)\in V$ is given by the solution of $F(\alpha,u;v) = 0$ for all $v\in V$. With $u:M\rightarrow V$ being the forward map, we are interested in back-propagating derivatives. This is described by the linear map $\mathcal{J}^*:V^* \rightarrow M^*$ which maps vectors in the dual space $V^*$ to the dual space $M^*$. As described in \cite{bouziani2023physics}, Firedrake allows the automatic construction of a differentiable PyTorch function which provides both the forward map $u=u(\alpha)$ and the backward map described by $\mathcal{J}^*_u$.
+
+As a concrete example, let $\alpha\in M$ be a coefficient function, where we assume that $M$ is the space of piecewise constant functions on a mesh covering the domain. For some given function $f$ the solution $u=u(\alpha)\in V$ is obtained by solving
+\begin{equation}
+    F(\alpha,u;v) =\int_\Omega e^{\alpha}\nabla u \cdot \nabla v\;dx - \int_\Omega f v\; dx = 0 \qquad\text{for all $v\in V$}\label{eqn:F_definition}
+\end{equation}
+where $V$ is the space of piecewise linear functions.
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Preliminaries}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Function spaces, linear maps and duals}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+For two (function) spaces $V$, $W$ we write $\mathcal{N}(V,W)$ for the set of all non-linear maps from $V$ to $W$ and $\mathcal{L}(V,W)\subset \mathcal{N}(V,W)$ for the corresponding set of linear maps: for all $\ell\in\mathcal{L}(V,W)$ we have that $\ell(\alpha_1 v_1+\alpha_2 v_2) = \alpha_1\ell(v_1)+\alpha_2\ell(v_2)$. In particular, we define the dual $V^* := \mathcal{L}(V,\mathbb{R})$ of the space $V$ to be the set of all linear functionals on $V$.
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Gateux derivative}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+ For a function $f\in \mathcal{N}(V,W)$ with $f(v) = w$ we  can define the Gateaux derivative in the direction $h_v$ as follows:
+\begin{equation}
+    \frac{df}{dw}(v;h_v) = \lim_{\tau\rightarrow 0}\frac{f(v+\tau h_v)-f(v)}{\tau}
+\end{equation}
+Hence, for given $v$, the derivative $\frac{df}{dw}(v;\cdot)\in \mathcal{L}(V,W)$ is a linear map from $V$ to $W$.
+\paragraph{Example.} Let $\ell\in \mathcal{N}(V,\mathbb{R})$ be defined as
+\begin{equation}
+    \ell(u) = \int_\Omega u^2 v\; dx \qquad\text{for all $v\in V$}
+\end{equation}
+Then
+\begin{equation}
+    \begin{aligned}
+    \frac{d\ell}{d u}(u;h_u) &= \lim_{\tau\rightarrow 0} \frac{1}{\tau}\left(\int_\Omega (u+\tau h_u)^2 v\; dx - \int_\Omega u^2 v\; dx\right)\\
+    &= 2\int_\Omega h_u u v\; dx
+    \end{aligned}
+\end{equation}
+and $\frac{d\ell}{d u}(u;\cdot) \in V^* = \mathcal{L}(V,\mathbb{R})$ is a linear functional.
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Adjoint operator}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+Let $L\in\mathcal{L}(V,W)$ be a linear operator. Then we define the adjoint operator $L^*\in\mathcal{L}(W^*,V^*)$ as follows: for all $w'\in W^*$ we have that
+$L^*(w') = v' \in V^*$ such that $v'(v) = w'(Lv)$ for all $v\in V$. In other words,
+\begin{equation}
+    \left(L^*(w')\right)(v) = w'(Lv)\qquad\text{for all $w'\in W^*$, $v\in V$.}
+\end{equation}
+Writing $\langle v',v\rangle := v'(v)$ for the duality pairing on $V$ (with a similar expression on $W$), this can also be written as $\langle L^*w',v\rangle = \langle w', Lv\rangle$.
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Detailed derivation}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+As in \cite{bouziani2023physics}, we observe that
+\begin{equation}
+    \mathcal{J}^* = \left(\frac{du}{d\alpha}\right)^* \in \mathcal{L}(V^*,M^*)
+\end{equation}
+or more specifically:
+\begin{equation}
+    \langle\mathcal{J}^*w',h_\alpha \rangle  = \langle \left(\frac{du}{d\alpha}\right)^* w',h_\alpha \rangle = \langle w',\frac{du}{d\alpha}(\alpha,h_\alpha) \rangle \qquad\text{for all $w'\in V^*$, $h_\alpha\in M$}.
+\end{equation}
+Now consider the map $G\in\mathcal{N}(M,V^*)$ defined by
+\begin{equation}
+    G(\alpha)(v) = F(u(\alpha),\alpha;v) \qquad\text{for all $v\in V$.}
+\end{equation} 
+We have that $\frac{dG}{d\alpha}\in \mathcal{L}(M,V^*)$ and per definition of $u=u(\alpha)$ it follows that
+\begin{equation}
+     0 = \frac{dG}{d\alpha} = \frac{\partial F}{\partial u}\frac{du}{d\alpha} + \frac{\partial F}{\partial \alpha},
+\end{equation}
+where it should be noted that $\frac{\partial F}{\partial u}\in \mathcal{L}(V,V^*)$, $\frac{du}{d\alpha}\in \mathcal{L}(M,V)$ and $\frac{\partial F}{\partial \alpha}\in \mathcal{L}(M,V^*)$. Hence, we get that
+\begin{equation}
+    \frac{du}{d\alpha} = - \left(\frac{\partial F}{\partial u}\right)^{-1}\frac{\partial F}{\partial\alpha}
+\end{equation}
+With this we have that 
+\begin{equation}
+    \begin{aligned}
+    \langle\mathcal{J}^*w',h_\alpha \rangle &= \langle w',\left(\frac{\partial F}{\partial u}\right)^{-1}\frac{\partial F}{\partial\alpha}(\alpha,h_\alpha)\rangle\\
+    &= -\langle \frac{\partial F}{\partial\alpha}(\alpha,h_\alpha), \lambda\rangle
+    \end{aligned}
+\end{equation}
+with $\lambda = \left(\left(\frac{\partial F}{\partial u}\right)^*\right)^{-1}w'$, i.e. for each given $w'\in V^*$ we obtain $\lambda\in V$ by solving the adjoint equation
+\begin{equation}
+\langle \frac{\partial F}{\partial u}v,\lambda\rangle = \langle w',v\rangle \qquad\text{for all $v\in V$}.
+\end{equation}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Example}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+For the functional in \eqref{eqn:F_definition}, let $\vec{w}'$ be the dof-vector of $w'$ and $\vec{h}_\alpha$ be the dof-vector of $h_\alpha$. Then we have that
+\begin{equation}
+    \vec{h}_\alpha^\top J^* \vec{w}' = - \int_\Omega h_\alpha e^\alpha \nabla u\cdot \nabla \lambda\; dx
+\end{equation}
+where $\lambda$ is the solution of the adjoint equation
+\begin{equation}
+    \int_\Omega e^{\alpha} \nabla v\cdot \nabla\lambda \;dx = w'(v) \qquad\text{for all $v\in V$}
+\end{equation}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\bibliographystyle{unsrt}
+\bibliography{functional_derivatives}
+\end{document}
