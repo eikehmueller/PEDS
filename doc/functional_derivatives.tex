@@ -86,22 +86,64 @@ With this we have that
     \begin{aligned}
     \langle\mathcal{J}^*w',h_\alpha \rangle &= -\langle w',\left(\frac{\partial F}{\partial u}\right)^{-1}\frac{\partial F}{\partial\alpha}(\alpha,h_\alpha)\rangle\\
     &= -\langle \frac{\partial F}{\partial\alpha}(\alpha,h_\alpha), \lambda\rangle
-    \end{aligned}
+    \end{aligned}\label{eqn:adjoint_equation}
 \end{equation}
 with $\left(\frac{\partial F}{\partial u}\right)^* \lambda = w'$, i.e. for each given $w'\in V^*$ we obtain $\lambda\in V$ by solving the adjoint equation
 \begin{equation}
 \langle \frac{\partial F}{\partial u}v,\lambda\rangle = \langle w',v\rangle \qquad\text{for all $v\in V$}.
 \end{equation}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\subsection{Example}
+\section{Worked example}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-For the functional in \eqref{eqn:F_definition}, let $\vec{w}'$ be the dof-vector of $w'$ and $\vec{h}_\alpha$ be the dof-vector of $h_\alpha$. Then we have that
+Assume that the objective function is
 \begin{equation}
-    \vec{h}_\alpha^\top J^* \vec{w}' = - \int_\Omega h_\alpha e^\alpha \nabla u\cdot \nabla \lambda\; dx
+    J(u,\alpha) = \int_\Omega (u-u_{\text{target}})^2\;dx + \int_\Omega \nabla\alpha\cdot \nabla\alpha\;dx
 \end{equation}
-where $\lambda$ is the solution of the adjoint equation
+where $u_{\text{target}}$ is given and $u=u(\alpha)$ satisfies \eqref{eqn:F_definition}.
+
+We want to compute
 \begin{equation}
-    \int_\Omega e^{\alpha} \nabla v\cdot \nabla\lambda \;dx = w'(v) \qquad\text{for all $v\in V$}
+\frac{d J}{d \alpha} \in M^*
+\end{equation}
+By using \eqref{eqn:adjoint_equation} with $w'=\partial J/\partial u\in V^*$ this is given by
+\begin{equation}
+    \begin{aligned}
+\frac{d J}{d \alpha}(h_\alpha) &= \frac{\partial J}{\partial u}\frac{du}{d\alpha}(h_\alpha) + \frac{\partial J}{\partial\alpha}(h_\alpha)\\
+&= -\langle\frac{\partial J}{\partial u},\left(\frac{\partial F}{\partial u}\right)^{-1} \frac{\partial F}{\partial \alpha}(h_\alpha)\rangle +\frac{\partial J}{\partial\alpha}(h_\alpha)\\
+&= -\langle \frac{\partial F}{\partial \alpha}(h_\alpha),\lambda \rangle +\frac{\partial J}{\partial\alpha}(h_\alpha)\label{eqn:alpha_gradient}
+    \end{aligned}
+\end{equation}
+for all $h_\alpha\in M$ where $\lambda\in V$ solves the adjoint equation
+\begin{equation}
+\langle\frac{\partial F}{\partial u}v,\lambda\rangle = \frac{\partial J}{\partial u}(v) \quad\text{for all $v\in V$}.\label{eqn:adjoint_equation_specfic}
+\end{equation}
+\paragraph{Step 1: Compute gradients of loss-function.} We start by computing the gradients $\partial J/\partial u\in V^*$ and $\partial J/\partial \alpha\in M^*$:
+\begin{equation}
+    \begin{aligned}
+\frac{\partial J}{\partial u}(\alpha,u;h_u) &= \lim_{\tau\rightarrow 0}\frac{J(u+\tau h_u,\alpha)-J(u,\alpha)}{\tau}=2\int_\Omega (u-u_{\text{target}})h_u\; dx\\
+\frac{\partial J}{\partial \alpha}(\alpha,u;h_\alpha) &= \lim_{\tau\rightarrow 0}\frac{J(u,\alpha+\tau h_\alpha)-J(u,\alpha)}{\tau} = 2\int_\Omega \nabla\alpha \cdot \nabla h_\alpha\;dx
+    \end{aligned}
+\end{equation}
+\paragraph{Step 2: Solve constraint equation.} Next, we solve $F(\alpha,u;v) = 0$, i.e. for a given $\alpha\in M$ we find $u=u(\alpha)\in V$ such that
+\begin{equation}
+\int_\Omega e^{\alpha}\nabla u \cdot \nabla v\;dx = \int_\Omega f v\; dx\qquad\text{for all $v\in V$}.
+\end{equation}
+\paragraph{Step 3: Solve adjoint equation.} To derive the adjoint equation, we compute the derivative $\partial F/\partial u$. For fixed $v\in V$, this is the linear map from $V$ to $\mathbb{R}$ defined by
+\begin{equation}
+\frac{\partial F}{\partial u}(\alpha,u;v,h_u) = \lim_{\tau\rightarrow 0}\frac{F(\alpha,u+\tau h_u;v)-F(\alpha,u;v)}{\tau} = \int_\Omega e^\alpha \nabla h_u\cdot \nabla v\; dx
+\end{equation}
+Hence, the adjoint equation in \eqref{eqn:adjoint_equation_specfic} becomes
+\begin{equation}
+\frac{\partial F}{\partial u}(\alpha,u;\lambda,v) = \int_\Omega e^\alpha \nabla \lambda\cdot \nabla v\;dx = 2\int_\Omega (u-u_{\text{target}})v\;dx = \frac{\partial J}{\partial u}(u,\alpha;v)\quad\text{for all $v\in V$.}
+\end{equation}
+Solving this equation for the given $\alpha$ and $u=u(\alpha)$ gives $\lambda$.
+\paragraph{Step 4: Compute $\boldsymbol{\partial F/\partial \alpha}$.} We also need the partial derivative $\partial F/\partial \alpha$. For fixed $v\in V$ this is given by
+\begin{equation}
+\frac{\partial F}{\partial \alpha}(h_\alpha) = \lim_{\tau\rightarrow 0}\frac{F(u,\alpha+\tau h_\alpha;v)-F(u,\alpha;v)}{\tau} = \int_{\Omega} h_\alpha e^\alpha \nabla u\cdot \nabla v\;dx.
+\end{equation}
+\paragraph{Step 5: Combine derivatives.} Finally, we insert everything into \eqref{eqn:alpha_gradient} to obtain
+\begin{equation}
+\frac{d J}{d\alpha}(h_\alpha) = -\int_\Omega h_\alpha e^{\alpha} \nabla u\cdot \nabla \lambda\;dx + 2\int_\Omega \nabla\alpha\cdot \nabla h_\alpha\;dx.
 \end{equation}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \bibliographystyle{unsrt}
