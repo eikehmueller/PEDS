@@ -22,3 +22,9 @@ pip install peds
 ```
 
 If you want to edit the code, you might prefer to install in editable mode by passing the `--editable` flag.
+
+## Results
+
+The following figure shows the performance/accuracy tradeoff for classical models with different solution, the PEDS method and a pure neural network approach:
+
+![Comparison of different models for 2d diffusion problem](performance.png)
