@@ -1,4 +1,4 @@
-[![Automated testing](https://github.com/eikehmueller/JaxMaterials/actions/workflows/automated-testing.yml/badge.svg)](https://github.com/eikehmueller/JaxMaterials/actions/workflows/automated-testing.yml)
+[![Automated testing](https://github.com/eikehmueller/PEDS/actions/workflows/automated-testing.yml/badge.svg)](https://github.com/eikehmueller/PEDS/actions/workflows/automated-testing.yml)
 # PEDS — Physics‑Enhanced Deep Surrogates
 
 Python/PyTorch package for building **physics-enhanced neural surrogate (PEDS) models**, following the framework introduced in [Pestourie et al., *Nature Machine Intelligence* (2023)](https://www.nature.com/articles/s42256-023-00761-y). PEDS models learn PDE-approximations of physical systems while respecting known physical laws. This allows them to combine efficiency with domain-specific constraints while learning from data. At the moment, 1d and 2d diffusion models have been implemented in this repository.
