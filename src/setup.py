@@ -114,10 +114,10 @@ def get_physics_model(config):
     domain_size = config["discretisation"]["domain_size"]
     dim = config["model"]["dimension"]
     if dim == 1:
-        f_rhs = torch.ones(size=(n,), dtype=torch.float)
+        f_rhs = torch.ones(size=(n,), dtype=torch.float) * config["model"]["f_rhs"]
         return DiffusionModel1d(f_rhs, domain_size)
     elif dim == 2:
-        f_rhs = torch.ones(size=(n, n), dtype=torch.float)
+        f_rhs = torch.ones(size=(n, n), dtype=torch.float) * config["model"]["f_rhs"]
         return DiffusionModel2d(f_rhs, domain_size)
     else:
         raise RuntimeError(f"invalid dimension: {dim}")
@@ -261,6 +261,7 @@ def get_coarse_model(physics_model_highres, scaling_factor, qoi):
     else:
         raise RuntimeError(f"invalid dimension: {dim}")
 
+
 def get_pure_nn_model(config):
     """Initialise the naive NN model
 
@@ -289,11 +290,11 @@ def get_pure_nn_model(config):
             torch.nn.Conv1d(8, 8, 3, padding=1),
             torch.nn.Flatten(-2, -1),
             torch.nn.ReLU(),
-            torch.nn.Linear(n//2,16),
+            torch.nn.Linear(n // 2, 16),
             torch.nn.ReLU(),
-            torch.nn.Linear(16,16),
+            torch.nn.Linear(16, 16),
             torch.nn.ReLU(),
-            torch.nn.Linear(16,qoi.dim),
+            torch.nn.Linear(16, qoi.dim),
         )
 
     elif config["model"]["dimension"] == 2:
@@ -315,15 +316,16 @@ def get_pure_nn_model(config):
             torch.nn.Conv2d(8, 8, 3, padding=1),
             torch.nn.Flatten(-3, -1),
             torch.nn.ReLU(),
-            torch.nn.Linear(8*(n//16)**2,16),
+            torch.nn.Linear(8 * (n // 16) ** 2, 16),
             torch.nn.ReLU(),
-            torch.nn.Linear(16,16),
+            torch.nn.Linear(16, 16),
             torch.nn.ReLU(),
-            torch.nn.Linear(16,qoi.dim),
+            torch.nn.Linear(16, qoi.dim),
         )
     else:
         dim = config["model"]["dimension"]
         raise RuntimeError(f"invalid dimension: {dim}")
+
 
 def get_datasets(config):
     """Return the training, validation and test datasets

@@ -21,7 +21,12 @@ from setup import (
 
 
 def measure_error(
-    dataset, peds_model, pure_nn_model,physics_model_highres, scaling_factor, sum_qoi_components=False
+    dataset,
+    peds_model,
+    pure_nn_model,
+    physics_model_highres,
+    scaling_factor,
+    sum_qoi_components=False,
 ):
     """Measure loss values of different models
 
@@ -44,8 +49,12 @@ def measure_error(
     alpha, q_target = next(iter(dataloader))
     q_pred_peds = peds_model(alpha)
     q_pred_pure_nn = pure_nn_model(alpha)
-    avg_squared_error_peds = np.average((q_pred_peds - q_target).detach().numpy() ** 2, axis=0)
-    avg_squared_error_pure_nn = np.average((q_pred_pure_nn - q_target).detach().numpy() ** 2, axis=0)
+    avg_squared_error_peds = np.average(
+        (q_pred_peds - q_target).detach().numpy() ** 2, axis=0
+    )
+    avg_squared_error_pure_nn = np.average(
+        (q_pred_pure_nn - q_target).detach().numpy() ** 2, axis=0
+    )
     if sum_qoi_components:
         rms_error["peds"] = np.sqrt(np.sum(avg_squared_error_peds))
         rms_error["pure_nn"] = np.sqrt(np.sum(avg_squared_error_pure_nn))
@@ -66,7 +75,7 @@ def measure_error(
 
 
 def measure_performance(
-    dataset, peds_model,pure_nn_model, physics_model_highres, scaling_factor, device
+    dataset, peds_model, pure_nn_model, physics_model_highres, scaling_factor, device
 ):
     """Measure the performance of the models
 
@@ -321,10 +330,15 @@ if __name__ == "__main__":
 
     model = PEDSModel(physics_model_lowres, downsampler, qoi)
     model.load(config["model"]["peds_filename"])
-    pure_nn_model = torch.load(config["model"]["pure_nn_filename"],weights_only=False)
+    pure_nn_model = torch.load(config["model"]["pure_nn_filename"], weights_only=False)
 
-    n_param = sum([torch.numel(p) for p in model.parameters()])
-    print(f"number of model parameters = {n_param}")
+    n_param = {
+        label: sum([torch.numel(p) for p in m.parameters()])
+        for label, m in zip(["PEDS", "pure NN"], [model, pure_nn_model])
+    }
+    print(
+        f"number of model parameters  = {n_param["PEDS"]} [PEDS], {n_param["pure NN"]} [pure NN]"
+    )
 
     rms_error = measure_error(
         test_dataset,
@@ -347,7 +361,12 @@ if __name__ == "__main__":
             print(f"  rmse error [{key:10s}] = {rmse:8.4e}")
 
     time_per_sample = measure_performance(
-        test_dataset, model,pure_nn_model, physics_model_highres, scaling_factor, device
+        test_dataset,
+        model,
+        pure_nn_model,
+        physics_model_highres,
+        scaling_factor,
+        device,
     )
     print()
     print("==== performance ====")

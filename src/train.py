@@ -58,7 +58,7 @@ if __name__ == "__main__":
     )
 
     model = PEDSModel(physics_model_lowres, downsampler, qoi, nn_model)
-    
+
     n_param = sum([torch.numel(p) for p in model.parameters()])
     print(f"number of model parameters = {n_param}")
 
@@ -125,7 +125,9 @@ if __name__ == "__main__":
 
     pure_nn_model.to(device)
 
-    optimizer = torch.optim.Adam(pure_nn_model.parameters(), lr=config["train"]["lr_initial"])
+    optimizer = torch.optim.Adam(
+        pure_nn_model.parameters(), lr=config["train"]["lr_initial"]
+    )
     scheduler = torch.optim.lr_scheduler.ExponentialLR(optimizer, gamma=gamma)
 
     writer = SummaryWriter(flush_secs=5)

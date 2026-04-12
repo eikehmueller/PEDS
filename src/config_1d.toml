@@ -2,6 +2,7 @@ title = "PEDS configuration file"
 
 [model]
 dimension = 1          # dimension of problem
+f_rhs = 1.0            # right hand side forcing term in W/mm
 peds_filename = "../data/peds_model_1d_256_lognormal.pth"
 pure_nn_filename = "../data/pure_nn_model_1d_256_lognormal.pth"
 

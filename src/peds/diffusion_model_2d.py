@@ -303,7 +303,6 @@ class DiffusionModel2dOperator(torch.autograd.Function):
 
 
 class DiffusionModel2d(torch.nn.Module):
-
     def __init__(self, f_rhs, domain_size):
         """Initialise a new instance
 
@@ -345,9 +344,9 @@ class DiffusionModel2d(torch.nn.Module):
         f_rhs = self.metadata["f_rhs"]
         domain_size = self.metadata["domain_size"]
         n = f_rhs.shape[-1]
-        assert (
-            n == (n // scaling_factor) * scaling_factor
-        ), "scaling factor must divide problem size"
+        assert n == (n // scaling_factor) * scaling_factor, (
+            "scaling factor must divide problem size"
+        )
         # Construct coarse RHS by averaging over final two dimensions
         f_rhs_coarse = torch.squeeze(
             torch.nn.functional.avg_pool2d(
