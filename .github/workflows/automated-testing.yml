@@ -21,7 +21,7 @@ jobs:
         python-version: "3.12"    
     - name: Install PETSc and petsc4py
       run: | 
-        sudo apt-get install petsc-dev python3-petsc4py
+        sudo apt-get install -y petsc-dev python3-petsc4py
     - name: Install pytest
       run: |        
         python3 -m pip install pytest 
