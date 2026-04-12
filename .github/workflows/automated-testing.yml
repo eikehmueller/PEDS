@@ -22,10 +22,8 @@ jobs:
     - name: Install PETSc/petsc4py, prerequisites and run tests
       env:
           PYTEST_ADDOPTS: "--color=yes --disable-warnings"
-      run: |
-        conda init
-        conda install -c conda-forge petsc
-        conda install -c conda-forge petsc4py         
+      run: |        
+        sudo apt-get install petsc-dev python3-petsc4py
         python -m pip install pytest
         python -m pip install .
         python -m pytest -v
