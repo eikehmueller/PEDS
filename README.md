@@ -11,11 +11,20 @@ High-fidelity simulations in engineering and scientific domains are often comput
 
 This repository contains code to
 
-- Train and evaluate fast surrogate models that approximate expensive numerical solvers  
+- Train and evaluate fast surrogate models that approximate expensive numerical solvers
 - Integrate prior physical knowledge, such as conservation laws, into machine learning models to ensure physically consistent predictions  
 - Provide a flexible, modular framework that can be extended to new models and domains (currently, 1d and 2d diffusion are implemented)
 
+## Key achievements
+
+Compared to a classical PDE-based reference method run at different resolutions, our PEDS implementation is **more than 30x faster** and **nearly twice as accurate** when predicting the solution at a set of sample points for a 2d diffusion problem.
+
+It doesn't quite reach the performance of a purely data-driven CNN model, but - in contrast to this approach - it also provides a coarse-grained solution field.
+
+![Comparison of different models for 2d diffusion problem](figures/performance.png)
+
 ### Installation
+
 To install this package clone the repository and run
 
 ```
@@ -23,9 +32,3 @@ pip install peds
 ```
 
 If you want to edit the code, you might prefer to install in editable mode by passing the `--editable` flag.
-
-## Results
-
-The following figure shows the performance/accuracy tradeoff for classical PDE solvers with different resolution, the PEDS method and a pure neural network approach for a 2d diffusion model:
-
-![Comparison of different models for 2d diffusion problem (preliminary)](performance.png)
