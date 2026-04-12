@@ -19,6 +19,11 @@ jobs:
       uses: actions/setup-python@v3
       with:
         python-version: "3.12"    
+    - name: Install PETSc and petsc4py
+      run: |
+        conda init
+        conda install -c conda-forge petsc
+        conda install -c conda-forge petsc4py         
     - name: Install pytest
       run: |
         python -m pip install --upgrade pip
@@ -30,7 +35,4 @@ jobs:
       env:
           PYTEST_ADDOPTS: "--color=yes --disable-warnings"
       run: |
-        conda init
-        conda install -c conda-forge petsc
-        conda install -c conda-forge petsc4py 
         pytest -v
