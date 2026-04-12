@@ -1,0 +1,32 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "peds"
+version = "1.0.0"
+description = "PEDS for diffusion models"
+readme = "README.md"
+authors = [
+    { name = "Eike Mueller", email = "e.mueller@bath.ac.uk" },
+]
+dependencies = [
+    "numpy",
+    "torch",
+]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: GPL-3.0 License",
+    "Operating System :: POSIX :: Linux",
+]
+
+[project.urls]
+Homepage = "https://github.com/eikehmueller/PEDS"
+
+[tool.setuptools]
+package-dir = { "" = "src" }
+
+[tool.setuptools.packages.find]
+where = ["src"]
+include = ["peds*"]
+namespaces = true
