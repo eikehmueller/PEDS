@@ -24,7 +24,7 @@ jobs:
           PYTEST_ADDOPTS: "--color=yes --disable-warnings"
       run: |        
         sudo apt-get install petsc-dev python3-petsc4py
-        python -m pip install pytest
+        python -m pip install pytest 
         python -m pip install .
         python -m pytest -v
     
