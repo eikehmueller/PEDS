@@ -22,7 +22,7 @@ jobs:
     - name: Install PETSc and petsc4py
       run: | 
         sudo apt-get install -y petsc-dev
-        sudo apt-get install -y python-petsc4py
+        sudo apt-get install -y python3-petsc4py
     - name: Check petsc4py installation
       run: |
         which python
