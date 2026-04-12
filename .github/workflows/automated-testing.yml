@@ -28,5 +28,5 @@ jobs:
         conda install -c conda-forge petsc4py         
         conda install pytest
         python -m pip install .
-        pytest -v
+        python -m pytest -v
     
