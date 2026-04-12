@@ -7,6 +7,8 @@ import torch
 import numpy as np
 from matplotlib import pyplot as plt
 
+plt.rcParams.update({"font.size": 12})
+
 from peds.peds_model import PEDSModel
 
 from setup import (
@@ -149,19 +151,21 @@ def visualise_performance(rms_error, time_per_sample, filename):
         [time_per_sample["peds"]],
         [rms_error["peds"]],
         color="red",
-        linewidth=2,
+        linewidth=0,
         marker="s",
-        markersize=6,
+        markersize=8,
+        markerfacecolor="white",
+        markeredgewidth=2,
         label="PEDS",
     )
     plt.plot(
         [time_per_sample["pure_nn"]],
         [rms_error["pure_nn"]],
         color="green",
-        linewidth=2,
+        linewidth=0,
         marker="*",
-        markersize=8,
-        label="pure NN",
+        markersize=12,
+        label="CNN",
     )
     sfs = sorted(rms_error["coarse"].keys())
     plt.plot(
@@ -170,7 +174,7 @@ def visualise_performance(rms_error, time_per_sample, filename):
         linewidth=2,
         color="blue",
         marker="o",
-        markersize=6,
+        markersize=8,
         label="coarse",
     )
     plt.plot(
@@ -186,7 +190,7 @@ def visualise_performance(rms_error, time_per_sample, filename):
         color="blue",
         marker="o",
         linewidth=2,
-        markersize=6,
+        markersize=8,
         markerfacecolor="white",
         markeredgewidth=2,
         label="highres",
@@ -197,12 +201,76 @@ def visualise_performance(rms_error, time_per_sample, filename):
             f"   ${sf}\\times $",
             xy=(time_per_sample["coarse"][sf], rms_error["coarse"][sf]),
         )
+    plt.annotate(
+        "",
+        xy=(1.1 * time_per_sample["peds"], rms_error["peds"]),
+        xytext=(0.9 * time_per_sample["coarse"][2], rms_error["peds"]),
+        arrowprops=dict(arrowstyle="->", lw=3, mutation_scale=20, color="red"),
+    )
+    plt.annotate(
+        "",
+        xy=(time_per_sample["peds"], 1.05 * rms_error["peds"]),
+        xytext=(time_per_sample["peds"], 0.95 * rms_error["coarse"][8]),
+        arrowprops=dict(arrowstyle="->", lw=3, mutation_scale=20, color="red"),
+    )
+    speedup = time_per_sample["coarse"][2] / time_per_sample["peds"]
+    plt.text(
+        2.0e-3,
+        3.75,
+        f"{speedup:.0f}x faster",
+        fontsize=14,
+        color="red",
+        bbox=dict(
+            facecolor="white",
+            alpha=0.7,
+            edgecolor="none",
+        ),
+    )
+    accuracy_gain = rms_error["coarse"][8] / rms_error["peds"]
+    plt.text(
+        1.5e-4,
+        5.75,
+        f"{accuracy_gain:.1f}x more\n accurate",
+        fontsize=14,
+        color="red",
+        bbox=dict(
+            facecolor="white",
+            alpha=0.7,
+            edgecolor="none",
+        ),
+    )
+    plt.text(
+        3e-4,
+        2.5,
+        f"purely data-driven ML",
+        fontsize=14,
+        color="green",
+        bbox=dict(
+            facecolor="white",
+            alpha=0.7,
+            edgecolor="none",
+        ),
+    )
+    plt.text(
+        1.5e-3,
+        7,
+        f"PDE reference methods",
+        fontsize=14,
+        rotation=-25,
+        color="blue",
+        bbox=dict(
+            facecolor="white",
+            alpha=0.7,
+            edgecolor="none",
+        ),
+    )
 
     ax = plt.gca()
     ax.set_xlabel("time per sample [ms]")
     ax.set_ylabel("RMS error")
     ax.set_xscale("log")
     plt.legend(loc="upper right")
+    plt.grid(which="both")
     plt.savefig(filename, bbox_inches="tight")
 
 
@@ -264,7 +332,7 @@ def visualise_error(rms_error, sample_points, domain_size, filename):
             ax.text(
                 sample_points[j, 0] + 0.125 * rms_error["coarse"][scaling_factor][j],
                 sample_points[j, 1],
-                f"{rms_error["coarse"][scaling_factor][j]:6.4f}",
+                f"{rms_error['coarse'][scaling_factor][j]:6.4f}",
                 color="red",
                 verticalalignment="top",
                 size="small",
@@ -272,7 +340,7 @@ def visualise_error(rms_error, sample_points, domain_size, filename):
             ax.text(
                 sample_points[j, 0] + 0.125 * rms_error["coarse"][scaling_factor][j],
                 sample_points[j, 1],
-                f"{rms_error["peds"][j]:6.4f}",
+                f"{rms_error['peds'][j]:6.4f}",
                 verticalalignment="bottom",
                 color="blue",
                 size="small",
@@ -337,7 +405,7 @@ if __name__ == "__main__":
         for label, m in zip(["PEDS", "pure NN"], [model, pure_nn_model])
     }
     print(
-        f"number of model parameters  = {n_param["PEDS"]} [PEDS], {n_param["pure NN"]} [pure NN]"
+        f"number of model parameters  = {n_param['PEDS']} [PEDS], {n_param['pure NN']} [pure NN]"
     )
 
     rms_error = measure_error(
@@ -374,13 +442,13 @@ if __name__ == "__main__":
         if key == "coarse":
             for scaling_factor, value in value.items():
                 print(
-                    f"  time per sample [coarse {scaling_factor:2d}x] = {1000*value:8.4e} ms"
+                    f"  time per sample [coarse {scaling_factor:2d}x] = {1000 * value:8.4e} ms"
                 )
         else:
-            print(f"  time per sample [{key:10s}] = {1000*value:8.4e} ms")
+            print(f"  time per sample [{key:10s}] = {1000 * value:8.4e} ms")
     print()
 
-    visualise_performance(rms_error, time_per_sample, "performance.pdf")
+    visualise_performance(rms_error, time_per_sample, "performance.png")
 
     rms_error = measure_error(
         test_dataset,
