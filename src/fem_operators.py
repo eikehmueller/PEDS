@@ -73,9 +73,7 @@ def construct_torch_operator(V_u, V_alpha, f_rhs):
     lvs = LinearVariationalSolver(lvp)
     lvs.solve()
     fda.stop_annotating()
-    return BatchedOperator(
-        fd_ml.fem_operator(fda.ReducedFunctional(u, fda.Control(alpha)))
-    )
+    return fd_ml.fem_operator(fda.ReducedFunctional(u, fda.Control(alpha)))
 
 
 def construct_qoi(V_u, points):
@@ -95,9 +93,7 @@ def construct_qoi(V_u, points):
     V_qoi = FunctionSpace(vertex_only_mesh, "DG", 0)
     u_at_points = assemble(interpolate(u, V_qoi))
     fda.stop_annotating()
-    return BatchedOperator(
-        fd_ml.fem_operator(fda.ReducedFunctional(u_at_points, fda.Control(u)))
-    )
+    fd_ml.fem_operator(fda.ReducedFunctional(u_at_points, fda.Control(u)))
 
 
 batchsize = 8  # Batch size
@@ -120,8 +116,8 @@ solver = construct_torch_operator(V, V_DG, f_rhs)
 qoi = construct_qoi(V, points)
 loss = torch.nn.MSELoss()
 
-alpha = torch.tensor(rng.normal(size=(batchsize, nx)))
-q_true = torch.tensor(rng.normal(size=(batchsize, npoints)))
+alpha = torch.tensor(rng.normal(size=(nx,)))
+q_true = torch.tensor(rng.normal(size=(npoints,)))
 
 u = solver(alpha)
 q = qoi(u)

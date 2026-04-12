@@ -45,9 +45,7 @@ def construct_torch_operator(V_u, V_alpha, f_rhs):
 
     bcs = DirichletBC(V_u, 0, "on_boundary")
     u = Function(V_u)
-    lvp = LinearVariationalProblem(a_lhs, b_rhs, u, bcs=bcs)
-    lvs = LinearVariationalSolver(lvp)
-    lvs.solve()
+    solve(a_lhs == b_rhs, u, bcs=bcs)
     fda.stop_annotating()
     return fd_ml.fem_operator(fda.ReducedFunctional(u, fda.Control(alpha)))
 
