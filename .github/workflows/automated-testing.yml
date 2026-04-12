@@ -35,4 +35,5 @@ jobs:
       env:
           PYTEST_ADDOPTS: "--color=yes --disable-warnings"
       run: |
+        conda init
         pytest -v
