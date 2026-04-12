@@ -22,6 +22,7 @@ jobs:
     - name: Setup anaconda and install PETSc/petsc4py
       run: |
         conda create --name petsc_sandbox
+        conda init
         conda activate petsc_sandbox 
         conda install -c conda-forge petsc
         conda install -c conda-forge petsc4py 
