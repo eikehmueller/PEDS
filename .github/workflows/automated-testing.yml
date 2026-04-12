@@ -18,12 +18,7 @@ jobs:
     - name: Set up Python 3
       uses: actions/setup-python@v3
       with:
-        python-version: "3.12"
-    - name: Setup anaconda and install PETSc/petsc4py
-      run: |
-        conda init
-        conda install -c conda-forge petsc
-        conda install -c conda-forge petsc4py 
+        python-version: "3.12"    
     - name: Install pytest
       run: |
         python -m pip install --upgrade pip
@@ -36,4 +31,6 @@ jobs:
           PYTEST_ADDOPTS: "--color=yes --disable-warnings"
       run: |
         conda init
+        conda install -c conda-forge petsc
+        conda install -c conda-forge petsc4py 
         pytest -v
