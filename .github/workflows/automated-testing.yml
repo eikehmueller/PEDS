@@ -26,7 +26,7 @@ jobs:
         conda init
         conda install -c conda-forge petsc
         conda install -c conda-forge petsc4py         
-        conda install pytest
+        python -m pip install pytest
         python -m pip install .
         python -m pytest -v
     
