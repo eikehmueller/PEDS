@@ -22,7 +22,7 @@ This repository contains code to
 - Forward/backward solves are implemented efficiently in the state-of-the-art [PETSc](https://petsc.org/) linear solver library
 - Provide routines for sampling from distributions of the input fields
 
-## Key achievements
+## Achievements
 
 Compared to a classical PDE-based reference method run at different resolutions, our PEDS implementation is **more than 30x faster** and **nearly twice as accurate** when predicting the solution at a set of sample points for a 2d diffusion problem.
 
@@ -52,7 +52,7 @@ python -m pytest -v
 
 ## Usage
 
-The setup is controlled with configuration files in `toml` format, see [src/config_1d.toml](src/config_1d.toml) and [src/config_2d.toml](src/config_2d.toml) for examples. This allows specification of
+The setup is controlled with configuration files in [TOML format](https://toml.io/en/), see [src/config_1d.toml](src/config_1d.toml) and [src/config_2d.toml](src/config_2d.toml) for examples. This allows specification of
 
 * model setup (1d/2d)
 * filenames for trained models
@@ -60,7 +60,9 @@ The setup is controlled with configuration files in `toml` format, see [src/conf
 * data distribution used for training
 * training hyperparameters (batchsize, number of epochs, learning rate)
 
-The main scripts for training and evaluation can be found in the [src/](src/) folder.
+The configuration is parsed in [src/setup.py](src/setup.py).
+
+The main scripts for training and evaluation can be found in the [src/](src/) folder; the subfolder [src/tools/](src/tools/) contains some additional scripts for visualisation and testing; these require the [Firedrake library](https://www.firedrakeproject.org/) but they are not essential for training and evaluation of the model.
 
 ### Training
 
