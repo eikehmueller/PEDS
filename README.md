@@ -21,7 +21,7 @@ This repository contains code to
 
 ## Key achievements
 
-Compared to a classical PDE-based reference method run at different resolutions, our PEDS implementation is **more than 30x faster** and **nearly twice as accurate** when predicting the solution at a set of sample points for a 2d diffusion problem.
+Compared to a classical PDE-based reference method run at different resolutions, our PEDS implementation is **more than 30x faster** (for fixed accuracy) and **nearly twice as accurate** (for fixed runtime) when predicting the solution at a set of sample points for a 2d diffusion problem.
 
 It doesn't quite reach the performance of a purely data-driven CNN model, but - in contrast to this approach - it also provides a coarse-grained solution field.
 
